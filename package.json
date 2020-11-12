@@ -37,8 +37,6 @@
   "dependencies": {
     "cassandra-driver": "^3.1.1",
     "debug": "^2.2.0",
-    "env-paths": "^1.0.0",
-    "mkdirp": "^0.5.2",
     "mssql": "^6.2.1",
     "mysql2": "^2.2.0",
     "pg": "^7.18.0",
@@ -46,8 +44,7 @@
     "sql-query-identifier": "^1.1.0",
     "sqlite3": "^4.0.6",
     "ssh2": "^0.5.0",
-    "uuid": "^3.0.0",
-    "valida2": "^2.5.0"
+    "uuid": "^3.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
