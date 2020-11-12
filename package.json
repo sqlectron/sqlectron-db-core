@@ -32,7 +32,7 @@
     "url": "https://github.com/sqlectron/sqlectron-db-core"
   },
   "engines": {
-    "node": ">=6"
+    "node": ">=10"
   },
   "dependencies": {
     "cassandra-driver": "^3.1.1",

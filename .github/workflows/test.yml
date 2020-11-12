@@ -16,22 +16,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - node-version: 6.x
-            mysql-version: 5.7
-            maraidb-version: 10.1
-            cassandra-version: 2.1
-            postgres-version: 9
-            sqlserver-collation: Latin1_General_CI_AS
-          - node-version: 8.x
-            mysql-version: 5.7
-            maraidb-version: 10.1
-            cassandra-version: "3.0"
-            postgres-version: 9
-            sqlserver-collation: Latin1_General_CI_AS
           - node-version: 10.x
             mysql-version: 5.7
             maraidb-version: 10.1
-            cassandra-version: "3.0"
+            cassandra-version: 2.1
             postgres-version: 9
             sqlserver-collation: Latin1_General_CI_AS
           - node-version: 10.x
