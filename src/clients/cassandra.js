@@ -1,7 +1,7 @@
 import * as cassandra from 'cassandra-driver';
 import { identify } from 'sql-query-identifier';
 
-import createLogger from '../../logger';
+import createLogger from '../logger';
 
 const logger = createLogger('db:clients:cassandra');
 

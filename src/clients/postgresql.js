@@ -2,9 +2,9 @@ import pg from 'pg';
 import { identify } from 'sql-query-identifier';
 
 import { buildDatabseFilter, buildSchemaFilter } from './utils';
-import createLogger from '../../logger';
-import { createCancelablePromise, versionCompare } from '../../utils';
-import errors from '../../errors';
+import createLogger from '../logger';
+import { createCancelablePromise, versionCompare } from '../utils';
+import errors from '../errors';
 
 const logger = createLogger('db:clients:postgresql');
 

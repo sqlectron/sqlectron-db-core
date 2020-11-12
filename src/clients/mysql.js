@@ -1,9 +1,9 @@
 import mysql from 'mysql2';
 import { identify } from 'sql-query-identifier';
 
-import createLogger from '../../logger';
-import { createCancelablePromise } from '../../utils';
-import errors from '../../errors';
+import createLogger from '../logger';
+import { createCancelablePromise } from '../utils';
+import errors from '../errors';
 
 const logger = createLogger('db:clients:mysql');
 

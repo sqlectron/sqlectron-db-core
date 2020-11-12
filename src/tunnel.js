@@ -1,7 +1,7 @@
 import net from 'net';
 import { Client } from 'ssh2';
-import { getPort, readFile } from '../utils';
-import createLogger from '../logger';
+import { getPort, readFile } from './utils';
+import createLogger from './logger';
 
 const logger = createLogger('db:tunnel');
 

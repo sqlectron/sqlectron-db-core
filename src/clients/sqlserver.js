@@ -2,7 +2,7 @@ import { connect } from 'mssql';
 import { identify } from 'sql-query-identifier';
 
 import { buildDatabseFilter, buildSchemaFilter } from './utils';
-import createLogger from '../../logger';
+import createLogger from '../logger';
 
 const logger = createLogger('db:clients:sqlserver');
 

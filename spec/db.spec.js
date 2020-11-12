@@ -1,11 +1,9 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { stub } from 'sinon';
 import config from './databases/config';
 import setupSQLite from './databases/sqlite/setup';
 import setupCassandra from './databases/cassandra/setup';
-import { db, config as srcConfig } from '../src';
-import { clearLimitSelect } from '../src/db/client';
+import * as db from '../src';
 import { versionCompare } from '../src/utils';
 
 chai.use(chaiAsPromised);
@@ -634,6 +632,8 @@ describe('db', () => {
           });
         });
 
+        /*
+        TODO: figure out how to best handle limitQueryDefaultSelectTop
         describe('.getQuerySelectTop', () => {
           let stubObj;
 
@@ -695,6 +695,7 @@ describe('db', () => {
             }
           });
         });
+        */
 
         if (dbClient !== 'cassandra') {
           describe('.query', function () { // eslint-disable-line func-names

@@ -1,7 +1,6 @@
 import connectTunnel from './tunnel';
 import clients from './clients';
-import * as config from '../config';
-import createLogger from '../logger';
+import createLogger from './logger';
 
 
 const logger = createLogger('db');
@@ -284,11 +283,15 @@ function wrap(database, identifier) {
 }
 
 async function loadConfigLimit() {
+  // TODO: rework, where this value is passed in on createServer as an option
+  return undefined;
+  /*
   if (typeof limitSelect === 'undefined' || limitSelect === null) {
     const { limitQueryDefaultSelectTop } = await config.get();
     limitSelect = limitQueryDefaultSelectTop;
   }
   return limitSelect;
+  */
 }
 
 

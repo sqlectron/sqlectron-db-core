@@ -1,7 +1,7 @@
 {
-  "name": "sqlectron-core",
-  "version": "8.3.2",
-  "description": "sqlectron-core",
+  "name": "sqlectron-db-core",
+  "version": "9.0.0",
+  "description": "sqlectron-db-core",
   "main": "lib/index.js",
   "author": "The SQLECTRON Team",
   "license": "MIT",
@@ -29,7 +29,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/sqlectron/sqlectron-core"
+    "url": "https://github.com/sqlectron/sqlectron-db-core"
   },
   "engines": {
     "node": ">=6"
@@ -40,7 +40,7 @@
     "env-paths": "^1.0.0",
     "mkdirp": "^0.5.2",
     "mssql": "^6.2.1",
-    "mysql2": "^2.1.0",
+    "mysql2": "^2.2.0",
     "pg": "^7.18.0",
     "portfinder": "^0.4.0",
     "sql-query-identifier": "^1.1.0",

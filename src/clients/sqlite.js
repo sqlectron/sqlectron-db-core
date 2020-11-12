@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { identify } from 'sql-query-identifier';
 
-import createLogger from '../../logger';
+import createLogger from '../logger';
 
 const logger = createLogger('db:clients:sqlite');
 
