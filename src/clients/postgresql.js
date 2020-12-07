@@ -4,7 +4,6 @@ import { identify } from 'sql-query-identifier';
 import { buildDatabseFilter, buildSchemaFilter } from './utils';
 import createLogger from '../logger';
 import { createCancelablePromise, versionCompare } from '../utils';
-import errors from '../errors';
 
 const logger = createLogger('db:clients:postgresql');
 
@@ -259,10 +258,7 @@ export async function getTableKeys(conn, database, table, schema) {
 export function query(conn, queryText) {
   let pid = null;
   let canceling = false;
-  const cancelable = createCancelablePromise({
-    ...errors.CANCELED_BY_USER,
-    sqlectronError: 'CANCELED_BY_USER',
-  });
+  const cancelable = createCancelablePromise();
 
   return {
     execute() {

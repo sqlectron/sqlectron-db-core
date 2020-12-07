@@ -68,7 +68,7 @@ jobs:
     - run: npm ci --build-from-source
       if: matrix.node-version == '12.x'
 
-    - run: npm run lint
+    # - run: npm run lint
     - run: npm run compile
 
     # Set-up containers that do not support initialization sequences
@@ -80,4 +80,6 @@ jobs:
     - name: Initialize SQLServer Schema
       run: docker exec -i sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P Password12! -i /docker-entrypoint-initdb.d/schema.sql -d "sqlectron"
 
-    - run: DB_CLIENTS=mysql,mariadb,postgresql,redshift,sqlite,sqlserver,cassandra npm run test:coverage
+    # - run: DB_CLIENTS=mysql,mariadb,postgresql,redshift,sqlite,sqlserver,cassandra npm run test:coverage
+
+    - run: DB_CLIENTS=sqlite npm run test

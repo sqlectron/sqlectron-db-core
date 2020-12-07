@@ -1,8 +1,13 @@
 import debug from 'debug';
 
-const loggers = {};
+export interface Logger {
+  debug: debug.IDebugger;
+  error: debug.IDebugger;
+}
 
-export default function createLogger(namespace) {
+const loggers: {[key: string]: Logger} = {};
+
+export default function createLogger(namespace: string) {
   if (!namespace) { throw new Error('Missing log namespace'); }
   if (loggers[namespace]) { throw new Error('This logger is already registered'); }
 
@@ -22,7 +27,7 @@ export default function createLogger(namespace) {
 /**
  * Allow use a different logger
  */
-export function setLogger(customLogger) {
+export function setLogger(customLogger: (logger: string) => Logger) {
   Object.keys(loggers).forEach((logger) => {
     loggers[logger] = customLogger(logger);
   });

@@ -2,7 +2,8 @@ node_modules
 .DS_Store
 npm-debug.log
 *.bak
-lib
+lib/
+dist/
 spec/fixtures/.tmp.sqlectron.json
 sqlectron.db
 .nyc_output/

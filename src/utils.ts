@@ -3,7 +3,9 @@ import { homedir } from 'os';
 import path from 'path';
 import pf from 'portfinder';
 
-export function readFile(filename) {
+import { CanceledByUserError } from './errors';
+
+export function readFile(filename: string): Promise<string> {
   const filePath = resolveHomePathToAbsolute(filename);
   return new Promise((resolve, reject) => {
     fs.readFile(path.resolve(filePath), { encoding: 'utf-8' }, (err, data) => {
@@ -13,7 +15,7 @@ export function readFile(filename) {
   });
 }
 
-export function resolveHomePathToAbsolute(filename) {
+export function resolveHomePathToAbsolute(filename: string): string {
   if (!/^~\//.test(filename)) {
     return filename;
   }
@@ -21,7 +23,7 @@ export function resolveHomePathToAbsolute(filename) {
   return path.join(homedir(), filename.substring(2));
 }
 
-export function getPort() {
+export function getPort(): Promise<number> {
   return new Promise((resolve, reject) => {
     pf.getPort({ host: 'localhost' }, (err, port) => {
       if (err) return reject(err);
@@ -30,11 +32,15 @@ export function getPort() {
   });
 }
 
-export function createCancelablePromise(error, timeIdle = 100) {
+export function createCancelablePromise(timeIdle = 100): {
+  wait: () => Promise<void>,
+  cancel: () => void,
+  discard: () => void
+} {
   let canceled = false;
   let discarded = false;
 
-  const wait = (time) => new Promise((resolve) => setTimeout(resolve, time));
+  const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
   return {
     async wait() {
@@ -44,12 +50,7 @@ export function createCancelablePromise(error, timeIdle = 100) {
       }
 
       if (canceled) {
-        const err = new Error(error.message || 'Promise canceled.');
-
-        Object.getOwnPropertyNames(error)
-          .forEach((key) => err[key] = error[key]); // eslint-disable-line no-return-assign
-
-        throw err;
+        throw new CanceledByUserError();
       }
     },
     cancel() {
@@ -68,12 +69,8 @@ export function createCancelablePromise(error, timeIdle = 100) {
  * than the second version, 0 if they are equal, and 1 if the second version is smaller.
  * However, this function will only compare up-to the smallest part of the version string
  * defined between the two, such '8' and '8.0.2' will be considered equal.
- *
- * @param {string} a
- * @param {string} b
- * @returns {boolean}
  */
-export function versionCompare(a, b) {
+export function versionCompare(a: string, b: string): -1 | 0 | 1 {
   const fullA = a.split('.').map((val) => parseInt(val, 10));
   const fullB = b.split('.').map((val) => parseInt(val, 10));
 

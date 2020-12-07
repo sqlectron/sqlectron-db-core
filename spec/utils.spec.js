@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { versionCompare } from '../src/utils';
+import { versionCompare } from '../dist/utils';
 
 describe('utils', () => {
   describe('.versionCompare', () => {

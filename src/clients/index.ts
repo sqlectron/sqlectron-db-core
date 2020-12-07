@@ -1,14 +1,26 @@
-import mysql from './mysql';
-import postgresql from './postgresql';
-import sqlserver from './sqlserver';
-import sqlite from './sqlite';
-import cassandra from './cassandra';
+/*
+const mysql = require('./mysql');
+const postgresql = require('./postgresql');
+const sqlserver = require('./sqlserver');
+const cassandra = require('./cassandra');
+*/
+import SqliteAdapter from './sqlite';
+import type { AbstractAdapter } from './adapter';
+import type { Database } from '../client';
+import type { Server } from '../server';
 
+interface Client {
+  key: string;
+  name: string;
+  defaultPort?: number;
+  defaultDatabase?: string;
+  disabledFeatures: string[];
+}
 
 /**
  * List of supported database clients
  */
-export const CLIENTS = [
+export const CLIENTS: Client[] = [
   {
     key: 'mysql',
     name: 'MySQL',
@@ -49,6 +61,7 @@ export const CLIENTS = [
     key: 'sqlserver',
     name: 'Microsoft SQL Server',
     defaultPort: 1433,
+    disabledFeatures: [],
   },
   {
     key: 'sqlite',
@@ -83,12 +96,15 @@ export const CLIENTS = [
 ];
 
 
-export default {
-  mysql,
-  mariadb: mysql,
-  postgresql,
-  redshift: postgresql,
-  sqlserver,
-  sqlite,
-  cassandra,
-};
+export function adapterFactory(
+  client: string,
+  server: Server,
+  database: Database
+): AbstractAdapter {
+  switch (client) {
+    case 'sqlite':
+      return new SqliteAdapter(server, database);
+    default:
+      throw new Error(`Requested adapter for unknown client: ${client}`);
+  }
+}

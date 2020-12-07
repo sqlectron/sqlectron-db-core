@@ -1,16 +1,28 @@
 import net from 'net';
 import { Client } from 'ssh2';
+import type { ConnectConfig } from 'ssh2';
 import { getPort, readFile } from './utils';
 import createLogger from './logger';
+import type { ServerConfig } from './server';
 
 const logger = createLogger('db:tunnel');
 
-export default function (serverInfo) {
+interface TunnelConfig extends ConnectConfig {
+  srcHost: string;
+  srcPort: number;
+  dstHost: string;
+  dstPort: number;
+  sshPort: number;
+  localHost: string;
+  localPort: number;
+};
+
+export default function (serverInfo: ServerConfig): Promise<net.Server> {
   return new Promise(async (resolve, reject) => {
     logger().debug('configuring tunnel');
     const config = await configTunnel(serverInfo);
 
-    const connections = [];
+    const connections: (net.Socket | Client)[] = [];
 
     logger().debug('creating ssh tunnel server');
     const server = net.createServer(async (conn) => {
@@ -45,10 +57,8 @@ export default function (serverInfo) {
       });
 
       try {
-        const localPort = await getPort();
-
         logger().debug('connecting ssh tunnel client');
-        client.connect({ ...config, localPort });
+        client.connect(config);
       } catch (err) {
         server.emit('error', err);
       }
@@ -60,18 +70,24 @@ export default function (serverInfo) {
     });
 
     logger().debug('connecting ssh tunnel server');
-    server.listen(config.localPort, config.localHost, (err) => {
-      if (err) return reject(err);
-
+    server.listen(config.localPort, config.localHost, () => {
       logger().debug('connected ssh tunnel server');
       resolve(server);
+    }).on('error', (err) => {
+      reject(err);
     });
   });
 }
 
 
-async function configTunnel(serverInfo) {
-  const config = {
+async function configTunnel(serverInfo: ServerConfig) {
+  if (!serverInfo.port || !serverInfo.host) {
+    throw new Error('Host and port not specified for tunnel');
+  }
+  if (!serverInfo.ssh) {
+    throw new Error('SSH information not specified');
+  }
+  const config: TunnelConfig = {
     username: serverInfo.ssh.user,
     port: serverInfo.ssh.port,
     host: serverInfo.ssh.host,

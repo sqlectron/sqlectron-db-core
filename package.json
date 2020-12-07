@@ -6,8 +6,8 @@
   "author": "The SQLECTRON Team",
   "license": "MIT",
   "scripts": {
-    "compile": "babel -d lib/ src/",
-    "watch": "babel --watch -d lib/ src/",
+    "compile": "tsc",
+    "watch": "tsc -w",
     "prepublishOnly": "npm run compile",
     "lint": "eslint src/ spec/",
     "test:mysql": "DB_CLIENTS=mysql npm run test",
@@ -17,9 +17,9 @@
     "test:postgresql": "DB_CLIENTS=postgresql npm run test",
     "test:redshift": "DB_CLIENTS=redshift npm run test",
     "test:cassandra": "DB_CLIENTS=cassandra npm run test",
-    "test": "npm run lint && mocha --exit --timeout 40000 --require @babel/register --reporter spec \"./spec/**/*.spec.js\"",
+    "test": "mocha --exit --timeout 40000 --require @babel/register --reporter spec \"./spec/**/*.spec.js\"",
     "test:coverage": "nyc --reporter=text mocha --exit --timeout 4000 --require @babel/register --reporter spec \"./spec/**/*.spec.js\"",
-    "watch-test": "npm run lint && mocha --require @babel/register --watch --reporter spec \"./spec/**/*.spec.js\""
+    "watch-test": "mocha --require @babel/register --watch --reporter spec \"./spec/**/*.spec.js\""
   },
   "keywords": [
     "sqlectron",
@@ -36,11 +36,10 @@
   },
   "dependencies": {
     "cassandra-driver": "^3.1.1",
-    "debug": "^2.2.0",
+    "debug": "^4.3.1",
     "mssql": "^6.2.1",
     "mysql2": "^2.2.0",
     "pg": "^7.18.0",
-    "portfinder": "^0.4.0",
     "sql-query-identifier": "^1.1.0",
     "sqlite3": "^4.0.6",
     "ssh2": "^0.5.0",
@@ -54,6 +53,10 @@
     "@babel/plugin-transform-destructuring": "^7.9.5",
     "@babel/plugin-transform-modules-commonjs": "^7.9.6",
     "@babel/register": "^7.9.0",
+    "@types/debug": "^4.1.5",
+    "@types/sql-query-identifier": "^1.1.0",
+    "@types/sqlite3": "^3.1.6",
+    "@types/ssh2": "^0.5.46",
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
@@ -63,7 +66,9 @@
     "eslint-plugin-import": "^2.20.2",
     "mocha": "^6.2.3",
     "nyc": "^14.1.1",
-    "sinon": "^7.5.0"
+    "portfinder": "^1.0.28",
+    "sinon": "^7.5.0",
+    "typescript": "^4.1.2"
   },
   "nyc": {
     "include": "src",

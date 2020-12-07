@@ -234,10 +234,7 @@ export async function getTableKeys(conn, database, table) {
 export function query(conn, queryText) {
   let pid = null;
   let canceling = false;
-  const cancelable = createCancelablePromise({
-    ...errors.CANCELED_BY_USER,
-    sqlectronError: 'CANCELED_BY_USER',
-  });
+  const cancelable = createCancelablePromise(errors.CANCELED_BY_USER);
 
   return {
     execute() {

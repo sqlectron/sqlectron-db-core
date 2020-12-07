@@ -3,8 +3,8 @@ import chaiAsPromised from 'chai-as-promised';
 import config from './databases/config';
 import setupSQLite from './databases/sqlite/setup';
 import setupCassandra from './databases/cassandra/setup';
-import * as db from '../src';
-import { versionCompare } from '../src/utils';
+import * as db from '../dist';
+import { versionCompare } from '../dist/utils';
 
 chai.use(chaiAsPromised);
 
@@ -93,13 +93,6 @@ describe('db', () => {
         describe('.disconnect', () => {
           it('should close all connections in the pool', () => {
             dbConn.disconnect();
-          });
-        });
-
-        describe('.version', () => {
-          it('should return version string', () => {
-            const version = dbConn.version();
-            expect(version).to.be.a('string').and.not.be.empty;
           });
         });
 
