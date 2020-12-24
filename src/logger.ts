@@ -18,7 +18,7 @@ export default function createLogger(namespace: string) {
     error: debugLogger.bind(debugLogger),
   };
 
-  // The logger is load through a function
+  // The logger is loaded through a function
   // so is possible to access a new logger
   // defined with setLogger
   return () => loggers[namespace];
