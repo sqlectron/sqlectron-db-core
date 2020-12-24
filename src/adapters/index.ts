@@ -97,16 +97,17 @@ export const ADAPTERS: Adapter[] = [
 
 
 export function adapterFactory(
-  client: string,
+  adapter: string,
   server: Server,
   database: Database
 ): AbstractAdapter {
-  switch (client) {
+  switch (adapter) {
     case 'mysql':
+    case 'mariadb':
       return new MysqlAdapter(server, database);
     case 'sqlite':
       return new SqliteAdapter(server, database);
     default:
-      throw new Error(`Requested adapter for unknown client: ${client}`);
+      throw new Error(`Requested adapter for unknown adapter: ${adapter}`);
   }
 }

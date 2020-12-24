@@ -9,11 +9,11 @@ import { versionCompare } from '../dist/utils';
 chai.use(chaiAsPromised);
 
 /**
- * List of supported DB clients.
- * The "integration" tests will be executed for all supported DB clients.
- * And ensure all these clients has the same API and output results.
+ * List of supported DB adapters.
+ * The "integration" tests will be executed for all supported DB adapters.
+ * And ensure all these adapters has the same API and output results.
  */
-const SUPPORTED_DB_CLIENTS = db.CLIENTS.map((client) => client.key);
+const SUPPORTED_DB_ADAPTERS = db.ADAPTERS.map((adapter) => adapter.key);
 
 const dbSchemas = {
   redshift: 'public',
@@ -24,34 +24,34 @@ const dbSchemas = {
 /**
  * List of selected databases to be tested in the current task
  */
-const dbsToTest = (process.env.DB_CLIENTS || '').split(',').filter((client) => !!client);
+const dbsToTest = (process.env.DB_ADAPTERS || '').split(',').filter((adapter) => !!adapter);
 
-const postgresClients = ['postgresql', 'redshift'];
-const mysqlClients = ['mysql', 'mariadb'];
+const postgresAdapters = ['postgresql', 'redshift'];
+const mysqlAdapters = ['mysql', 'mariadb'];
 
 describe('db', () => {
-  const dbClients = dbsToTest.length ? dbsToTest : SUPPORTED_DB_CLIENTS;
-  if (dbClients.some((dbClient) => !SUPPORTED_DB_CLIENTS.includes(dbClient))) {
-    throw new Error('Invalid selected db client for tests');
+  const dbAdapters = dbsToTest.length ? dbsToTest : SUPPORTED_DB_ADAPTERS;
+  if (dbAdapters.some((dbAdapter) => !SUPPORTED_DB_ADAPTERS.includes(dbAdapter))) {
+    throw new Error('Invalid selected db adapter for tests');
   }
 
-  if (dbClients.includes('sqlite')) {
+  if (dbAdapters.includes('sqlite')) {
     setupSQLite(config.sqlite);
   }
-  if (dbClients.includes('cassandra')) {
+  if (dbAdapters.includes('cassandra')) {
     setupCassandra(config.cassandra);
   }
 
-  dbClients.forEach((dbClient) => {
-    const dbSchema = dbSchemas[dbClient];
+  dbAdapters.forEach((dbAdapter) => {
+    const dbSchema = dbSchemas[dbAdapter];
 
-    describe(dbClient, () => {
+    describe(dbAdapter, () => {
       describe('.connect', () => {
-        it(`should connect into a ${dbClient} database`, () => {
+        it(`should connect into a ${dbAdapter} database`, () => {
           const serverInfo = {
-            ...config[dbClient],
-            name: dbClient,
-            client: dbClient,
+            ...config[dbAdapter],
+            name: dbAdapter,
+            adapter: dbAdapter,
           };
 
           const serverSession = db.createServer(serverInfo);
@@ -62,10 +62,10 @@ describe('db', () => {
 
         it('should connect into server without database specified', () => {
           const serverInfo = {
-            ...config[dbClient],
-            database: db.CLIENTS.find((c) => c.key === dbClient).defaultDatabase,
-            name: dbClient,
-            client: dbClient,
+            ...config[dbAdapter],
+            database: db.ADAPTERS.find((adapter) => adapter.key === dbAdapter).defaultDatabase,
+            name: dbAdapter,
+            adapter: dbAdapter,
           };
 
           const serverSession = db.createServer(serverInfo);
@@ -77,9 +77,9 @@ describe('db', () => {
 
       describe('given is already connected', () => {
         const serverInfo = {
-          ...config[dbClient],
-          name: dbClient,
-          client: dbClient,
+          ...config[dbAdapter],
+          name: dbAdapter,
+          adapter: dbAdapter,
         };
 
         let serverSession;
@@ -109,7 +109,7 @@ describe('db', () => {
               sqlserver: 'SQL Server',
               cassandra: 'Cassandra',
             };
-            expect(version).to.have.property('name').to.contain(expectedName[dbClient]);
+            expect(version).to.have.property('name').to.contain(expectedName[dbAdapter]);
             expect(version).to.have.property('version').to.be.a('string').and.to.match(/(?:[0-9]\.?)+/);
             expect(version).to.have.property('string').to.be.a('string').and.to.be.not.empty;
           });
@@ -118,7 +118,7 @@ describe('db', () => {
         describe('.listDatabases', () => {
           it('should list all databases', async () => {
             const databases = await dbConn.listDatabases();
-            if (dbClient === 'sqlite') {
+            if (dbAdapter === 'sqlite') {
               expect(databases[0]).to.match(/sqlectron\.db$/);
             } else {
               expect(databases).to.include.members(['sqlectron']);
@@ -129,7 +129,7 @@ describe('db', () => {
         describe('.listTables', () => {
           it('should list all tables', async () => {
             const tables = await dbConn.listTables({ schema: dbSchema });
-            if (postgresClients.includes(dbClient) || dbClient === 'sqlserver') {
+            if (postgresAdapters.includes(dbAdapter) || dbAdapter === 'sqlserver') {
               expect(tables).to.eql([
                 { schema: dbSchema, name: 'roles' },
                 { schema: dbSchema, name: 'users' },
@@ -143,11 +143,11 @@ describe('db', () => {
           });
         });
 
-        if (dbClient !== 'cassandra') {
+        if (dbAdapter !== 'cassandra') {
           describe('.listViews', () => {
             it('should list all views', async () => {
               const views = await dbConn.listViews({ schema: dbSchema });
-              if (postgresClients.includes(dbClient) || dbClient === 'sqlserver') {
+              if (postgresAdapters.includes(dbAdapter) || dbAdapter === 'sqlserver') {
                 expect(views).to.eql([
                   { schema: dbSchema, name: 'email_view' },
                 ]);
@@ -163,31 +163,31 @@ describe('db', () => {
         describe('.listRoutines', () => {
           it('should list all routines with their type', async () => {
             const routines = await dbConn.listRoutines({ schema: dbSchema });
-            const routine = dbClient === 'postgresql' ? routines[1] : routines[0];
+            const routine = dbAdapter === 'postgresql' ? routines[1] : routines[0];
 
             // Postgresql routine type is always function. SP do not exist
             // Futhermore, PostgreSQL is expected to have two functions in schema, because
             // additional one is needed for trigger
-            if (dbClient === 'postgresql') {
+            if (dbAdapter === 'postgresql') {
               expect(routines).to.have.length(2);
               expect(routine).to.have.deep.property('routineType').to.eql('FUNCTION');
               expect(routine).to.have.deep.property('schema').to.eql(dbSchema);
-            } else if (dbClient === 'redshift') {
+            } else if (dbAdapter === 'redshift') {
               expect(routines).to.have.length(1);
               expect(routine).to.have.deep.property('routineType').to.eql('FUNCTION');
               expect(routine).to.have.deep.property('schema').to.eql(dbSchema);
-            } else if (mysqlClients.includes(dbClient)) {
+            } else if (mysqlAdapters.includes(dbAdapter)) {
               expect(routines).to.have.length(1);
               expect(routine).to.have.deep.property('routineType').to.eql('PROCEDURE');
               expect(routine).to.not.have.deep.property('schema');
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(routines).to.have.length(1);
               expect(routine).to.have.deep.property('routineType').to.eql('PROCEDURE');
               expect(routine).to.have.deep.property('schema').to.eql(dbSchema);
-            } else if (dbClient === 'cassandra' || dbClient === 'sqlite') {
+            } else if (dbAdapter === 'cassandra' || dbAdapter === 'sqlite') {
               expect(routines).to.have.length(0);
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
         });
@@ -207,26 +207,26 @@ describe('db', () => {
             expect(column('role_id')).to.exist;
             expect(column('createdat')).to.exist;
 
-            if (dbClient === 'sqlite') {
+            if (dbAdapter === 'sqlite') {
               expect(column('id')).to.have.property('dataType').to.have.string('INTEGER');
             } else {
               expect(column('id')).to.have.property('dataType').to.have.string('int');
             }
 
             // Each database may have different db types
-            if (postgresClients.includes(dbClient)) {
+            if (postgresAdapters.includes(dbAdapter)) {
               expect(column('username')).to.have.property('dataType').to.eql('text');
               expect(column('email')).to.have.property('dataType').to.eql('text');
               expect(column('password')).to.have.property('dataType').to.eql('text');
               expect(column('role_id')).to.have.property('dataType').to.eql('integer');
               expect(column('createdat')).to.have.property('dataType').to.eql('date');
-            } else if (dbClient === 'sqlite') {
+            } else if (dbAdapter === 'sqlite') {
               expect(column('username')).to.have.property('dataType').to.eql('VARCHAR(45)');
               expect(column('email')).to.have.property('dataType').to.eql('VARCHAR(150)');
               expect(column('password')).to.have.property('dataType').to.eql('VARCHAR(45)');
               expect(column('role_id')).to.have.property('dataType').to.eql('INT');
               expect(column('createdat')).to.have.property('dataType').to.eql('DATETIME');
-            } else if (dbClient === 'cassandra') {
+            } else if (dbAdapter === 'cassandra') {
               expect(column('username')).to.have.property('dataType').to.eql('text');
               expect(column('email')).to.have.property('dataType').to.eql('text');
               expect(column('password')).to.have.property('dataType').to.eql('text');
@@ -245,7 +245,7 @@ describe('db', () => {
         describe('.listTableTriggers', () => {
           it('should list all table related triggers', async () => {
             const triggers = await dbConn.listTableTriggers('users');
-            if (dbClient === 'cassandra' || dbClient === 'redshift') {
+            if (dbAdapter === 'cassandra' || dbAdapter === 'redshift') {
               expect(triggers).to.have.length(0);
             } else {
               expect(triggers).to.have.length(1);
@@ -257,22 +257,22 @@ describe('db', () => {
         describe('.listTableIndexes', () => {
           it('should list all indexes', async () => {
             const indexes = await dbConn.listTableIndexes('users', dbSchema);
-            if (dbClient === 'cassandra') {
+            if (dbAdapter === 'cassandra') {
               expect(indexes).to.have.length(0);
-            } else if (dbClient === 'sqlite') {
+            } else if (dbAdapter === 'sqlite') {
               expect(indexes).to.have.length(1);
               expect(indexes).to.include.members(['users_id_index']);
-            } else if (postgresClients.includes(dbClient)) {
+            } else if (postgresAdapters.includes(dbAdapter)) {
               expect(indexes).to.have.length(1);
               expect(indexes).to.include.members(['users_pkey']);
-            } else if (mysqlClients.includes(dbClient)) {
+            } else if (mysqlAdapters.includes(dbAdapter)) {
               expect(indexes).to.have.length(2);
               expect(indexes).to.include.members(['PRIMARY', 'role_id']);
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(indexes).to.have.length(1);
               expect(indexes[0]).to.match(/^PK__users__/i);
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
         });
@@ -280,10 +280,10 @@ describe('db', () => {
         describe('.listSchemas', () => {
           it('should list all schema', async () => {
             const schemas = await dbConn.listSchemas({ schema: { only: [dbSchema, 'dummy_schema'] } });
-            if (postgresClients.includes(dbClient)) {
+            if (postgresAdapters.includes(dbAdapter)) {
               expect(schemas).to.have.length(2);
               expect(schemas).to.include.members([dbSchema, 'dummy_schema']);
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(schemas).to.include('dummy_schema');
             } else {
               expect(schemas).to.have.length(0);
@@ -294,7 +294,7 @@ describe('db', () => {
         describe('.getTableReferences', () => {
           it('should list all tables that selected table has references to', async () => {
             const references = await dbConn.getTableReferences('users');
-            if (dbClient === 'cassandra' || dbClient === 'sqlite') {
+            if (dbAdapter === 'cassandra' || dbAdapter === 'sqlite') {
               expect(references).to.have.length(0);
             } else {
               expect(references).to.have.length(1);
@@ -306,9 +306,9 @@ describe('db', () => {
         describe('.getTableKeys', () => {
           it('should list all tables keys', async () => {
             const tableKeys = await dbConn.getTableKeys('users');
-            if (dbClient === 'cassandra') {
+            if (dbAdapter === 'cassandra') {
               expect(tableKeys).to.have.length(1);
-            } else if (dbClient === 'sqlite') {
+            } else if (dbAdapter === 'sqlite') {
               expect(tableKeys).to.have.length(0);
             } else {
               expect(tableKeys).to.have.length(2);
@@ -331,7 +331,7 @@ describe('db', () => {
           it('should return table create script', async () => {
             const [createScript] = await dbConn.getTableCreateScript('users');
 
-            if (dbClient === 'mysql' && versionCompare(dbConn.getVersion().version, '8') >= 0) {
+            if (dbAdapter === 'mysql' && versionCompare(dbConn.getVersion().version, '8') >= 0) {
               expect(createScript).to.contain('CREATE TABLE `users` (\n' +
               '  `id` int NOT NULL AUTO_INCREMENT,\n' +
               '  `username` varchar(45) DEFAULT NULL,\n' +
@@ -343,7 +343,7 @@ describe('db', () => {
               '  KEY `role_id` (`role_id`),\n' +
               '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
               ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci');
-            } else if (mysqlClients.includes(dbClient)) {
+            } else if (mysqlAdapters.includes(dbAdapter)) {
               expect(createScript).to.contain('CREATE TABLE `users` (\n' +
                 '  `id` int(11) NOT NULL AUTO_INCREMENT,\n' +
                 '  `username` varchar(45) DEFAULT NULL,\n' +
@@ -355,19 +355,19 @@ describe('db', () => {
                 '  KEY `role_id` (`role_id`),\n' +
                 '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
               ') ENGINE=InnoDB');
-            } else if (postgresClients.includes(dbClient)) {
+            } else if (postgresAdapters.includes(dbAdapter)) {
               expect(createScript).to.eql('CREATE TABLE public.users (\n' +
                 '  id integer NOT NULL,\n' +
                 '  username text NOT NULL,\n' +
                 '  email text NOT NULL,\n' +
-                `  ${dbClient === 'postgresql' ? 'password' : '"password"'} text NOT NULL,\n` +
+                `  ${dbAdapter === 'postgresql' ? 'password' : '"password"'} text NOT NULL,\n` +
                 '  role_id integer NULL,\n' +
                 '  createdat date NULL\n' +
                 ');\n' +
                 '\n' +
                 'ALTER TABLE public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id)',
               );
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(createScript).to.contain('CREATE TABLE users (\r\n' +
                 '  id int IDENTITY(1,1) NOT NULL,\r\n' +
                 '  username varchar(45)  NULL,\r\n' +
@@ -378,7 +378,7 @@ describe('db', () => {
                 ')\r\n');
               expect(createScript).to.contain('ALTER TABLE users ADD CONSTRAINT PK__users');
               expect(createScript).to.contain('PRIMARY KEY (id)');
-            } else if (dbClient === 'sqlite') {
+            } else if (dbAdapter === 'sqlite') {
               expect(createScript).to.eql('CREATE TABLE users (\n' +
                 '  id INTEGER NOT NULL,\n' +
                 '  username VARCHAR(45) NULL,\n' +
@@ -389,10 +389,10 @@ describe('db', () => {
                 '  PRIMARY KEY (id),\n' +
                 '  FOREIGN KEY (role_id) REFERENCES roles (id)\n)',
               );
-            } else if (dbClient === 'cassandra') {
+            } else if (dbAdapter === 'cassandra') {
               expect(createScript).to.eql(undefined);
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
         });
@@ -400,24 +400,24 @@ describe('db', () => {
         describe('.getTableSelectScript', () => {
           it('should return SELECT table script', async () => {
             const selectQuery = await dbConn.getTableSelectScript('users');
-            if (mysqlClients.includes(dbClient)) {
+            if (mysqlAdapters.includes(dbAdapter)) {
               expect(selectQuery).to.eql('SELECT `id`, `username`, `email`, `password`, `role_id`, `createdat` FROM `users`;');
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(selectQuery).to.eql('SELECT [id], [username], [email], [password], [role_id], [createdat] FROM [users];');
-            } else if (postgresClients.includes(dbClient) || dbClient === 'sqlite') {
+            } else if (postgresAdapters.includes(dbAdapter) || dbAdapter === 'sqlite') {
               expect(selectQuery).to.eql('SELECT "id", "username", "email", "password", "role_id", "createdat" FROM "users";');
-            } else if (dbClient === 'cassandra') {
+            } else if (dbAdapter === 'cassandra') {
               expect(selectQuery).to.eql('SELECT "id", "createdat", "email", "password", "role_id", "username" FROM "users";');
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
 
           it('should return SELECT table script with schema if defined', async () => {
             const selectQuery = await dbConn.getTableSelectScript('users', 'public');
-            if (dbClient === 'sqlserver') {
+            if (dbAdapter === 'sqlserver') {
               expect(selectQuery).to.eql('SELECT [id], [username], [email], [password], [role_id], [createdat] FROM [public].[users];');
-            } else if (postgresClients.includes(dbClient)) {
+            } else if (postgresAdapters.includes(dbAdapter)) {
               expect(selectQuery).to.eql('SELECT "id", "username", "email", "password", "role_id", "createdat" FROM "public"."users";');
             }
           });
@@ -427,39 +427,39 @@ describe('db', () => {
         describe('.getTableInsertScript', () => {
           it('should return INSERT INTO table script', async () => {
             const insertQuery = await dbConn.getTableInsertScript('users');
-            if (mysqlClients.includes(dbClient)) {
+            if (mysqlAdapters.includes(dbAdapter)) {
               expect(insertQuery).to.eql([
                 'INSERT INTO `users` (`id`, `username`, `email`, `password`, `role_id`, `createdat`)\n',
                 'VALUES (?, ?, ?, ?, ?, ?);',
               ].join(' '));
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(insertQuery).to.eql([
                 'INSERT INTO [users] ([id], [username], [email], [password], [role_id], [createdat])\n',
                 'VALUES (?, ?, ?, ?, ?, ?);',
               ].join(' '));
-            } else if (postgresClients.includes(dbClient) || dbClient === 'sqlite') {
+            } else if (postgresAdapters.includes(dbAdapter) || dbAdapter === 'sqlite') {
               expect(insertQuery).to.eql([
                 'INSERT INTO "users" ("id", "username", "email", "password", "role_id", "createdat")\n',
                 'VALUES (?, ?, ?, ?, ?, ?);',
               ].join(' '));
-            } else if (dbClient === 'cassandra') {
+            } else if (dbAdapter === 'cassandra') {
               expect(insertQuery).to.eql([
                 'INSERT INTO "users" ("id", "createdat", "email", "password", "role_id", "username")\n',
                 'VALUES (?, ?, ?, ?, ?, ?);',
               ].join(' '));
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
 
           it('should return INSERT INTO table script with schema if defined', async () => {
             const insertQuery = await dbConn.getTableInsertScript('users', 'public');
-            if (dbClient === 'sqlserver') {
+            if (dbAdapter === 'sqlserver') {
               expect(insertQuery).to.eql([
                 'INSERT INTO [public].[users] ([id], [username], [email], [password], [role_id], [createdat])\n',
                 'VALUES (?, ?, ?, ?, ?, ?);',
               ].join(' '));
-            } else if (postgresClients.includes(dbClient) || dbClient === 'sqlite') {
+            } else if (postgresAdapters.includes(dbAdapter) || dbAdapter === 'sqlite') {
               expect(insertQuery).to.eql([
                 'INSERT INTO "public"."users" ("id", "username", "email", "password", "role_id", "createdat")\n',
                 'VALUES (?, ?, ?, ?, ?, ?);',
@@ -471,44 +471,44 @@ describe('db', () => {
         describe('.getTableUpdateScript', () => {
           it('should return UPDATE table script', async () => {
             const updateQuery = await dbConn.getTableUpdateScript('users');
-            if (dbClient === 'mysql' || dbClient === 'mariadb') {
+            if (dbAdapter === 'mysql' || dbAdapter === 'mariadb') {
               expect(updateQuery).to.eql([
                 'UPDATE `users`\n',
                 'SET `id`=?, `username`=?, `email`=?, `password`=?, `role_id`=?, `createdat`=?\n',
                 'WHERE <condition>;',
               ].join(' '));
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(updateQuery).to.eql([
                 'UPDATE [users]\n',
                 'SET [id]=?, [username]=?, [email]=?, [password]=?, [role_id]=?, [createdat]=?\n',
                 'WHERE <condition>;',
               ].join(' '));
-            } else if (postgresClients.includes(dbClient) || dbClient === 'sqlite') {
+            } else if (postgresAdapters.includes(dbAdapter) || dbAdapter === 'sqlite') {
               expect(updateQuery).to.eql([
                 'UPDATE "users"\n',
                 'SET "id"=?, "username"=?, "email"=?, "password"=?, "role_id"=?, "createdat"=?\n',
                 'WHERE <condition>;',
               ].join(' '));
-            } else if (dbClient === 'cassandra') {
+            } else if (dbAdapter === 'cassandra') {
               expect(updateQuery).to.eql([
                 'UPDATE "users"\n',
                 'SET "id"=?, "createdat"=?, "email"=?, "password"=?, "role_id"=?, "username"=?\n',
                 'WHERE <condition>;',
               ].join(' '));
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
 
           it('should return UPDATE table script with schema if defined', async () => {
             const updateQuery = await dbConn.getTableUpdateScript('users', 'public');
-            if (dbClient === 'sqlserver') {
+            if (dbAdapter === 'sqlserver') {
               expect(updateQuery).to.eql([
                 'UPDATE [public].[users]\n',
                 'SET [id]=?, [username]=?, [email]=?, [password]=?, [role_id]=?, [createdat]=?\n',
                 'WHERE <condition>;',
               ].join(' '));
-            } else if (postgresClients.includes(dbClient) || dbClient === 'sqlite') {
+            } else if (postgresAdapters.includes(dbAdapter) || dbAdapter === 'sqlite') {
               expect(updateQuery).to.eql([
                 'UPDATE "public"."users"\n',
                 'SET "id"=?, "username"=?, "email"=?, "password"=?, "role_id"=?, "createdat"=?\n',
@@ -521,24 +521,24 @@ describe('db', () => {
         describe('.getTableDeleteScript', () => {
           it('should return table DELETE script', async () => {
             const deleteQuery = await dbConn.getTableDeleteScript('roles');
-            if (dbClient === 'mysql' || dbClient === 'mariadb') {
+            if (dbAdapter === 'mysql' || dbAdapter === 'mariadb') {
               expect(deleteQuery).to.contain('DELETE FROM `roles` WHERE <condition>;');
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(deleteQuery).to.contain('DELETE FROM [roles] WHERE <condition>;');
-            } else if (postgresClients.includes(dbClient) || dbClient === 'sqlite') {
+            } else if (postgresAdapters.includes(dbAdapter) || dbAdapter === 'sqlite') {
               expect(deleteQuery).to.contain('DELETE FROM "roles" WHERE <condition>;');
-            } else if (dbClient === 'cassandra') {
+            } else if (dbAdapter === 'cassandra') {
               expect(deleteQuery).to.contain('DELETE FROM "roles" WHERE <condition>;');
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
 
           it('should return table DELETE script with schema if defined', async () => {
             const deleteQuery = await dbConn.getTableDeleteScript('roles', 'public');
-            if (dbClient === 'sqlserver') {
+            if (dbAdapter === 'sqlserver') {
               expect(deleteQuery).to.contain('DELETE FROM [public].[roles] WHERE <condition>;');
-            } else if (postgresClients.includes(dbClient)) {
+            } else if (postgresAdapters.includes(dbAdapter)) {
               expect(deleteQuery).to.contain('DELETE FROM "public"."roles" WHERE <condition>;');
             }
           });
@@ -547,41 +547,41 @@ describe('db', () => {
         describe('.getViewCreateScript', () => {
           it('should return CREATE VIEW script', async () => {
             const [createScript] = await dbConn.getViewCreateScript('email_view');
-            if (mysqlClients.includes(dbClient)) {
+            if (mysqlAdapters.includes(dbAdapter)) {
               expect(createScript).to.contain([
                 'VIEW `email_view`',
                 'AS select `users`.`email` AS `email`,`users`.`password` AS `password`',
                 'from `users`',
               ].join(' '));
-            } else if (dbClient === 'postgresql') {
+            } else if (dbAdapter === 'postgresql') {
               expect(createScript).to.eql([
                 'CREATE OR REPLACE VIEW "public".email_view AS',
                 ' SELECT users.email,',
                 '    users.password',
                 '   FROM users;',
               ].join('\n'));
-            } else if (dbClient === 'redshift') {
+            } else if (dbAdapter === 'redshift') {
               expect(createScript).to.eql([
                 'CREATE OR REPLACE VIEW "public".email_view AS',
                 ' SELECT users.email, users."password"',
                 '   FROM users;',
               ].join('\n'));
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(createScript).to.eql([
                 '\nCREATE VIEW dbo.email_view AS',
                 'SELECT dbo.users.email, dbo.users.password',
                 'FROM dbo.users;\n',
               ].join('\n'));
-            } else if (dbClient === 'sqlite') {
+            } else if (dbAdapter === 'sqlite') {
               expect(createScript).to.eql([
                 'CREATE VIEW email_view AS',
                 '  SELECT users.email, users.password',
                 '  FROM users',
               ].join('\n'));
-            } else if (dbClient === 'cassandra') {
+            } else if (dbAdapter === 'cassandra') {
               expect(createScript).to.eql(undefined);
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
         });
@@ -589,7 +589,7 @@ describe('db', () => {
         describe('.getRoutineCreateScript', () => {
           it('should return CREATE PROCEDURE/FUNCTION script', async () => {
             const [createScript] = await dbConn.getRoutineCreateScript('users_count', 'Procedure');
-            if (mysqlClients.includes(dbClient)) {
+            if (mysqlAdapters.includes(dbAdapter)) {
               expect(createScript).to.contain('CREATE DEFINER=');
               expect(createScript).to.contain([
                 'PROCEDURE `users_count`()',
@@ -597,7 +597,7 @@ describe('db', () => {
                 '  SELECT COUNT(*) FROM users;',
                 'END',
               ].join('\n'));
-            } else if (dbClient === 'postgresql') {
+            } else if (dbAdapter === 'postgresql') {
               expect(createScript).to.eql([
                 'CREATE OR REPLACE FUNCTION public.users_count()',
                 ' RETURNS bigint',
@@ -606,21 +606,21 @@ describe('db', () => {
                 '  SELECT COUNT(*) FROM users AS total;',
                 '$function$\n',
               ].join('\n'));
-            } else if (dbClient === 'redshift') {
+            } else if (dbAdapter === 'redshift') {
               expect(createScript).to.eql([
                 'CREATE OR REPLACE FUNCTION public.users_count()',
                 '  RETURNS bigint AS $$',
                 '  SELECT COUNT(*) FROM users AS total;',
                 '$$ LANGUAGE sql VOLATILE',
               ].join('\n'));
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(createScript).to.contain('CREATE PROCEDURE dbo.users_count');
               expect(createScript).to.contain('@Count int OUTPUT');
               expect(createScript).to.contain('SELECT @Count = COUNT(*) FROM dbo.users');
-            } else if (dbClient === 'cassandra' || dbClient === 'sqlite') {
+            } else if (dbAdapter === 'cassandra' || dbAdapter === 'sqlite') {
               expect(createScript).to.eql(undefined);
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
         });
@@ -642,16 +642,16 @@ describe('db', () => {
           it('should return select with default limit', async () => {
             stubObj.returns({});
             const sql = await dbConn.getQuerySelectTop('test_table');
-            if (mysqlClients.includes(dbClient)) {
+            if (mysqlAdapters.includes(dbAdapter)) {
               expect(sql).to.eql('SELECT * FROM `test_table` LIMIT 1000');
-            } else if (postgresClients.includes(dbClient)) {
+            } else if (postgresAdapters.includes(dbAdapter)) {
               expect(sql).to.eql('SELECT * FROM "public"."test_table" LIMIT 1000');
-            } else if (dbClient === 'sqlite' || dbClient === 'cassandra') {
+            } else if (dbAdapter === 'sqlite' || dbAdapter === 'cassandra') {
               expect(sql).to.eql('SELECT * FROM "test_table" LIMIT 1000');
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(sql).to.eql('SELECT TOP 1000 * FROM [test_table]');
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
 
@@ -660,37 +660,37 @@ describe('db', () => {
               limitQueryDefaultSelectTop: 125,
             });
             const sql = await dbConn.getQuerySelectTop('test_table');
-            if (mysqlClients.includes(dbClient)) {
+            if (mysqlAdapters.includes(dbAdapter)) {
               expect(sql).to.eql('SELECT * FROM `test_table` LIMIT 125');
-            } else if (postgresClients.includes(dbClient)) {
+            } else if (postgresAdapters.includes(dbAdapter)) {
               expect(sql).to.eql('SELECT * FROM "public"."test_table" LIMIT 125');
-            } else if (dbClient === 'sqlite' || dbClient === 'cassandra') {
+            } else if (dbAdapter === 'sqlite' || dbAdapter === 'cassandra') {
               expect(sql).to.eql('SELECT * FROM "test_table" LIMIT 125');
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(sql).to.eql('SELECT TOP 125 * FROM [test_table]');
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
 
           it('should return select with limit from parameters', async () => {
             const sql = await dbConn.getQuerySelectTop('test_table', 'public', 222);
-            if (mysqlClients.includes(dbClient)) {
+            if (mysqlAdapters.includes(dbAdapter)) {
               expect(sql).to.eql('SELECT * FROM `test_table` LIMIT 222');
-            } else if (postgresClients.includes(dbClient)) {
+            } else if (postgresAdapters.includes(dbAdapter)) {
               expect(sql).to.eql('SELECT * FROM "public"."test_table" LIMIT 222');
-            } else if (dbClient === 'sqlite' || dbClient === 'cassandra') {
+            } else if (dbAdapter === 'sqlite' || dbAdapter === 'cassandra') {
               expect(sql).to.eql('SELECT * FROM "test_table" LIMIT 222');
-            } else if (dbClient === 'sqlserver') {
+            } else if (dbAdapter === 'sqlserver') {
               expect(sql).to.eql('SELECT TOP 222 * FROM [test_table]');
             } else {
-              throw new Error('Invalid db client');
+              throw new Error('Invalid db adapter');
             }
           });
         });
         */
 
-        if (dbClient !== 'cassandra') {
+        if (dbAdapter !== 'cassandra') {
           describe('.query', function () { // eslint-disable-line func-names
             this.timeout(15000);
 
@@ -709,13 +709,13 @@ describe('db', () => {
               // data source, and take longer than 5 seconds to run. For SQLite,
               // that means doing a large select on the same table multiple times.
               // For redshift, we just run a ton of queries.
-              if (dbClient === 'sqlite') {
+              if (dbAdapter === 'sqlite') {
                 const fromTables = [];
                 for (let i = 0; i < 50; i++) {
                   fromTables.push('sqlite_master');
                 }
                 sleepCommands.sqlite = `SELECT last.name FROM ${fromTables.join(',')} as last`;
-              } else if (dbClient === 'redshift') {
+              } else if (dbAdapter === 'redshift') {
                 const queries = [];
                 for (let i = 0; i < 50000; i++) {
                   queries.push(`
@@ -727,7 +727,7 @@ describe('db', () => {
                 sleepCommands.redshift = queries.join(';');
               }
 
-              const query = dbConn.query(sleepCommands[dbClient]);
+              const query = dbConn.query(sleepCommands[dbAdapter]);
               const executing = query.execute();
 
               // wait a 5 secs before cancel
@@ -759,9 +759,9 @@ describe('db', () => {
             expect(result[0].rows[0]).to.be.not.null;
             expect(result[0].rowCount).to.eql(1);
             let expected;
-            if (dbClient === 'sqlserver') {
+            if (dbAdapter === 'sqlserver') {
               expected = 1;
-            } else if (dbClient === 'sqlite') {
+            } else if (dbAdapter === 'sqlite') {
               expected = 0;
             }
             expect(result[0].affectedRows).to.eql(expected);
@@ -769,7 +769,7 @@ describe('db', () => {
         }
 
         describe('.executeQuery', () => {
-          const includePk = dbClient === 'cassandra';
+          const includePk = dbAdapter === 'cassandra';
 
           beforeEach(async () => {
             await dbConn.executeQuery(`
@@ -793,7 +793,7 @@ describe('db', () => {
                 const results = await dbConn.executeQuery('');
                 expect(results).to.have.length(0);
               } catch (err) {
-                if (dbClient === 'cassandra') {
+                if (dbAdapter === 'cassandra') {
                   expect(err.message).to.eql('line 0:-1 no viable alternative at input \'<EOF>\'');
                 } else {
                   throw err;
@@ -806,13 +806,13 @@ describe('db', () => {
                 const results = await dbConn.executeQuery('-- my comment');
 
                 // MySQL treats commented query as a non select query
-                if (dbClient === 'mysql' || dbClient === 'mariadb') {
+                if (dbAdapter === 'mysql' || dbAdapter === 'mariadb') {
                   expect(results).to.have.length(1);
                 } else {
                   expect(results).to.have.length(0);
                 }
               } catch (err) {
-                if (dbClient === 'cassandra') {
+                if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '2') === 0) {
                     expect(err.message).to.eql('line 0:-1 no viable alternative at input \'<EOF>\'');
                   } else {
@@ -833,7 +833,7 @@ describe('db', () => {
               // MSSQL/SQLite does not return the fields when the result is empty.
               // For those DBs that return the field names even when the result
               // is empty we should ensure all fields are included.
-              if (dbClient === 'sqlserver' || dbClient === 'sqlite') {
+              if (dbAdapter === 'sqlserver' || dbAdapter === 'sqlite') {
                 expect(result).to.have.property('fields').to.eql([]);
               } else {
                 const field = (name) => result.fields.find((item) => item.name === name);
@@ -873,7 +873,7 @@ describe('db', () => {
               expect(result).to.have.deep.property('rowCount').to.eql(1);
             });
 
-            if (postgresClients.includes(dbClient) || mysqlClients.includes(dbClient)) {
+            if (postgresAdapters.includes(dbAdapter) || mysqlAdapters.includes(dbAdapter)) {
               it('should not cast DATE types to native JS Date objects', async () => {
                 const results = await dbConn.executeQuery('select createdat from users');
 
@@ -917,7 +917,7 @@ describe('db', () => {
                 expect(secondResult).to.have.property('command').to.eql('SELECT');
                 expect(secondResult).to.have.deep.property('rowCount').to.eql(1);
               } catch (err) {
-                if (dbClient === 'cassandra') {
+                if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '3.10') >= 0) {
                     expect(err.message).to.match(/mismatched input 'select' expecting EOF/);
                   } else {
@@ -945,7 +945,7 @@ describe('db', () => {
               expect(result).to.have.property('fields').to.eql([]);
 
               // Cassandra does not return affectedRows
-              if (dbClient === 'cassandra') {
+              if (dbAdapter === 'cassandra') {
                 expect(result).to.have.property('affectedRows').to.eql(undefined);
               } else {
                 expect(result).to.have.property('affectedRows').to.eql(1);
@@ -953,7 +953,7 @@ describe('db', () => {
 
               // MSSQL does not return row count
               // so this value is based in the number of rows
-              if (dbClient === 'sqlserver') {
+              if (dbAdapter === 'sqlserver') {
                 expect(result).to.have.property('rowCount').to.eql(0);
               } else {
                 expect(result).to.have.property('rowCount').to.eql(undefined);
@@ -971,7 +971,7 @@ describe('db', () => {
                 `);
 
                 // MSSQL treats multiple non select queries as a single query result
-                if (dbClient === 'sqlserver') {
+                if (dbAdapter === 'sqlserver') {
                   expect(results).to.have.length(1);
                   const [result] = results;
 
@@ -997,7 +997,7 @@ describe('db', () => {
                   expect(secondResult).to.have.property('affectedRows').to.eql(1);
                 }
               } catch (err) {
-                if (dbClient === 'cassandra') {
+                if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '3.10') >= 0) {
                     expect(err.message).to.match(/mismatched input 'insert' expecting EOF/);
                   } else {
@@ -1024,7 +1024,7 @@ describe('db', () => {
               expect(result).to.have.property('fields').to.eql([]);
 
               // Cassandra does not return affectedRows
-              if (dbClient === 'cassandra') {
+              if (dbAdapter === 'cassandra') {
                 expect(result).to.have.property('affectedRows').to.eql(undefined);
               } else {
                 expect(result).to.have.property('affectedRows').to.eql(1);
@@ -1032,7 +1032,7 @@ describe('db', () => {
 
               // MSSQL does not return row count
               // so these value is based in the number of rows
-              if (dbClient === 'sqlserver') {
+              if (dbAdapter === 'sqlserver') {
                 expect(result).to.have.property('rowCount').to.eql(0);
               } else {
                 expect(result).to.have.property('rowCount').to.eql(undefined);
@@ -1047,7 +1047,7 @@ describe('db', () => {
                 `);
 
                 // MSSQL treats multiple non select queries as a single query result
-                if (dbClient === 'sqlserver') {
+                if (dbAdapter === 'sqlserver') {
                   expect(results).to.have.length(1);
                   const [result] = results;
 
@@ -1073,7 +1073,7 @@ describe('db', () => {
                   expect(secondResult).to.have.property('affectedRows').to.eql(1);
                 }
               } catch (err) {
-                if (dbClient === 'cassandra') {
+                if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '3.10') >= 0) {
                     expect(err.message).to.match(/mismatched input 'delete' expecting EOF/);
                   } else {
@@ -1100,7 +1100,7 @@ describe('db', () => {
               expect(result).to.have.property('fields').to.eql([]);
 
               // Cassandra does not return affectedRows
-              if (dbClient === 'cassandra') {
+              if (dbAdapter === 'cassandra') {
                 expect(result).to.have.property('affectedRows').to.eql(undefined);
               } else {
                 expect(result).to.have.property('affectedRows').to.eql(1);
@@ -1108,7 +1108,7 @@ describe('db', () => {
 
               // MSSQL does not return row count
               // so these value is based in the number of rows
-              if (dbClient === 'sqlserver') {
+              if (dbAdapter === 'sqlserver') {
                 expect(result).to.have.property('rowCount').to.eql(0);
               } else {
                 expect(result).to.have.property('rowCount').to.eql(undefined);
@@ -1123,7 +1123,7 @@ describe('db', () => {
                 `);
 
                 // MSSQL treats multiple non select queries as a single query result
-                if (dbClient === 'sqlserver') {
+                if (dbAdapter === 'sqlserver') {
                   expect(results).to.have.length(1);
                   const [result] = results;
 
@@ -1149,7 +1149,7 @@ describe('db', () => {
                   expect(secondResult).to.have.property('affectedRows').to.eql(1);
                 }
               } catch (err) {
-                if (dbClient === 'cassandra') {
+                if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '3.10') >= 0) {
                     expect(err.message).to.match(/mismatched input 'update' expecting EOF/);
                   } else {
@@ -1162,7 +1162,7 @@ describe('db', () => {
             });
           });
 
-          if (dbClient !== 'cassandra' && dbClient !== 'sqlite') {
+          if (dbAdapter !== 'cassandra' && dbAdapter !== 'sqlite') {
             describe('CREATE', () => {
               describe('DATABASE', () => {
                 beforeEach(async () => {
@@ -1177,7 +1177,7 @@ describe('db', () => {
                   const results = await dbConn.executeQuery('create database db_test_create_database');
 
                   // MSSQL does not return any information about CREATE queries
-                  if (dbClient === 'sqlserver') {
+                  if (dbAdapter === 'sqlserver') {
                     expect(results).to.have.length(0);
                     return;
                   }
@@ -1188,7 +1188,7 @@ describe('db', () => {
                   expect(result).to.have.property('command').to.eql('CREATE_DATABASE');
                   expect(result).to.have.property('rows').to.eql([]);
                   expect(result).to.have.property('fields').to.eql([]);
-                  // seems each DB client returns a different value for CREATE
+                  // seems each db adapter returns a different value for CREATE
                   expect(result).to.have.property('affectedRows').to.oneOf([0, 1, undefined]);
                   expect(result).to.have.property('rowCount').to.eql(undefined);
                 });
@@ -1196,7 +1196,7 @@ describe('db', () => {
             });
           }
 
-          if (dbClient !== 'cassandra' && dbClient !== 'sqlite') {
+          if (dbAdapter !== 'cassandra' && dbAdapter !== 'sqlite') {
             describe('DROP', () => {
               describe('DATABASE', () => {
                 beforeEach(async () => {
@@ -1211,7 +1211,7 @@ describe('db', () => {
                   const results = await dbConn.executeQuery('drop database db_test_create_database');
 
                   // MSSQL does not return any information about DROP queries
-                  if (dbClient === 'sqlserver') {
+                  if (dbAdapter === 'sqlserver') {
                     expect(results).to.have.length(0);
                     return;
                   }
@@ -1222,7 +1222,7 @@ describe('db', () => {
                   expect(result).to.have.property('command').to.eql('DROP_DATABASE');
                   expect(result).to.have.property('rows').to.eql([]);
                   expect(result).to.have.property('fields').to.eql([]);
-                  // seems each DB client returns a different value for DROP
+                  // seems each db adapter returns a different value for DROP
                   expect(result).to.have.property('affectedRows').to.oneOf([0, 1, undefined]);
                   expect(result).to.have.property('rowCount').to.eql(undefined);
                 });
@@ -1230,7 +1230,7 @@ describe('db', () => {
             });
           }
 
-          if (postgresClients.includes(dbClient)) {
+          if (postgresAdapters.includes(dbAdapter)) {
             describe('EXPLAIN', () => {
               it('should execute a single query', async () => {
                 const results = await dbConn.executeQuery('explain select * from users');
