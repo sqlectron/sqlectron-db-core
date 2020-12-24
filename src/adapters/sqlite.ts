@@ -3,10 +3,10 @@ import type { RunResult } from 'sqlite3';
 import { identify, Result } from 'sql-query-identifier';
 
 import createLogger from '../logger';
-import { AbstractAdapter } from './adapter';
-import type { QueryArgs, QueryRowResult } from './adapter';
+import { AbstractAdapter } from './abstract_adapter';
+import type { QueryArgs, QueryRowResult } from './abstract_adapter';
 import type { Server } from '../server';
-import type { Database } from '../client';
+import type { Database } from '../database';
 
 const logger = createLogger('db:clients:sqlite');
 
@@ -30,7 +30,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     super(server, database);
 
     const dbConfig = this.configDatabase();
-    logger().debug('create driver client for sqlite3 with config %j', dbConfig);
+    logger().debug('create adapter for sqlite3 with config %j', dbConfig);
     this.conn = {dbConfig};
   }
 

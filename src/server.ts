@@ -1,15 +1,17 @@
 import type { Server as NetServer } from 'net';
-import { Database } from './client';
-import { CLIENTS } from './clients';
+import { Database } from './database';
+import { ADAPTERS } from './adapters';
 
 export interface ServerConfig {
   name: string;
-  client: string;
+  adapter: string;
   host?: string;
   socketPath?: string;
   port?: number;
   localHost?: string;
   localPort?: number;
+  user?: string;
+  password?: string;
   ssh?: {
     user: string;
     password?: string;
@@ -17,6 +19,9 @@ export interface ServerConfig {
     privateKey?: string;
     host: string;
     port: number;
+  };
+  ssl?: {
+
   }
 };
 
@@ -73,8 +78,8 @@ export function createServer(serverConfig: ServerConfig) {
     throw new Error('Missing server configuration');
   }
 
-  if (!CLIENTS.some((client) => client.key === serverConfig.client)) {
-    throw new Error('Invalid SQL client');
+  if (!ADAPTERS.some((adapter) => adapter.key === serverConfig.adapter)) {
+    throw new Error('Invalid SQL adapter');
   }
 
   return new Server(serverConfig);

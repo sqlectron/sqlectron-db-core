@@ -1,15 +1,15 @@
 /*
-const mysql = require('./mysql');
 const postgresql = require('./postgresql');
 const sqlserver = require('./sqlserver');
 const cassandra = require('./cassandra');
 */
+import MysqlAdapter from './mysql';
 import SqliteAdapter from './sqlite';
-import type { AbstractAdapter } from './adapter';
-import type { Database } from '../client';
+import type { AbstractAdapter } from './abstract_adapter';
+import type { Database } from '../database';
 import type { Server } from '../server';
 
-interface Client {
+interface Adapter {
   key: string;
   name: string;
   defaultPort?: number;
@@ -18,9 +18,9 @@ interface Client {
 }
 
 /**
- * List of supported database clients
+ * List of supported database adapters
  */
-export const CLIENTS: Client[] = [
+export const ADAPTERS: Adapter[] = [
   {
     key: 'mysql',
     name: 'MySQL',
@@ -102,6 +102,8 @@ export function adapterFactory(
   database: Database
 ): AbstractAdapter {
   switch (client) {
+    case 'mysql':
+      return new MysqlAdapter(server, database);
     case 'sqlite':
       return new SqliteAdapter(server, database);
     default:

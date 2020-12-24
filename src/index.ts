@@ -1,2 +1,2 @@
-export { CLIENTS } from './clients';
+export { ADAPTERS } from './adapters';
 export { createServer } from './server';

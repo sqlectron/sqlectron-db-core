@@ -1,10 +1,10 @@
 import connectTunnel from './tunnel';
-import { adapterFactory } from './clients';
+import { adapterFactory } from './adapters';
 import createLogger from './logger';
 
 import type { AddressInfo } from 'net';
 import type { Server } from './server';
-import type { AbstractAdapter } from './clients/adapter';
+import type { AbstractAdapter } from './adapters/abstract_adapter';
 
 const logger = createLogger('db');
 
@@ -68,7 +68,7 @@ export class Database {
         this.server.config.localPort = port;
       }
 
-      const adapter = adapterFactory(this.server.config.client, this.server, this);
+      const adapter = adapterFactory(this.server.config.adapter, this.server, this);
 
       await Promise.all([
         adapter.connect(),

@@ -1,5 +1,5 @@
 import type { Result } from 'sql-query-identifier';
-import type { Database } from '../client';
+import type { Database } from '../database';
 import type { Server } from '../server';
 
 export interface AdapterVersion {
@@ -15,11 +15,18 @@ export interface QueryArgs {
 }
 
 export interface QueryRowResult {
-  command: Result['type'];
+  command: string;
   rows: any;
   fields: {name: string}[];
   rowCount?: number;
-  affectedRows: number;
+  affectedRows?: number;
+}
+
+export interface DatabaseFilter {
+  database?: string | {
+    only: string[];
+    ignore: string[];
+  }
 }
 
 export abstract class AbstractAdapter {
@@ -52,11 +59,11 @@ export abstract class AbstractAdapter {
     return Promise.resolve([]);
   }
 
-  listRoutines(filter: unknown): Promise<{schema: string, routineName: string, routineType: string}[]> {
+  listRoutines(filter: unknown): Promise<{schema?: string, routineName: string, routineType: string}[]> {
     return Promise.resolve([]);
   }
 
-  abstract listTableColumns(table: string, schema: string): Promise<{columnName: string, dataType: string}[]>
+  abstract listTableColumns(database: string, table: string, schema: string): Promise<{columnName: string, dataType: string}[]>
 
   listTableTriggers(table: string, schema: string): Promise<string[]> {
     return Promise.resolve([]);
@@ -79,7 +86,7 @@ export abstract class AbstractAdapter {
     return Promise.resolve([]);
   }
 
-  abstract listDatabases(filter: unknown): Promise<string[]>;
+  abstract listDatabases(filter: DatabaseFilter): Promise<string[]>;
 
   getQuerySelectTop(table: string, limit: number, schema: string) {
     return `SELECT * FROM ${this.wrapIdentifier(table)} LIMIT ${limit}`;
