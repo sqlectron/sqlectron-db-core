@@ -13,11 +13,6 @@ import type { Server } from '../server';
 
 const logger = createLogger('db:clients:mysql');
 
-const mysqlErrors = {
-  EMPTY_QUERY: 'ER_EMPTY_QUERY',
-  CONNECTION_LOST: 'PROTOCOL_CONNECTION_LOST',
-};
-
 declare module "mysql2" {
   interface PoolConnection {
     _fatalError: Error | null;
@@ -27,8 +22,13 @@ declare module "mysql2" {
 
 interface QueryResult {
   data: mysql.RowDataPacket[] | mysql.RowDataPacket[][] | mysql.ResultSetHeader;
-  fields: mysql.FieldPacket[];
+  fields: mysql.FieldPacket[] | mysql.FieldPacket[][];
 }
+
+const mysqlErrors = {
+  EMPTY_QUERY: 'ER_EMPTY_QUERY',
+  CONNECTION_LOST: 'PROTOCOL_CONNECTION_LOST',
+};
 
 export default class MysqlAdapter extends AbstractAdapter {
   conn: {
@@ -191,22 +191,29 @@ export default class MysqlAdapter extends AbstractAdapter {
   }
 
   async executeQuery(queryText: string, connection?: mysql.PoolConnection): Promise<QueryRowResult[]> {
-    const result = await this.driverExecuteQuery({ query: queryText }, connection);
-    const fields = result.fields;
+    const { data, fields } = await this.driverExecuteQuery({ query: queryText }, connection);
 
-    if (!result.data) {
+    if (
+      !data
+      || (
+        Array.isArray(data) && data.length === 0)
+        && fields.length === 0
+      ) {
       return [];
     }
 
     const commands = identifyCommands(queryText).map((item) => item.type);
 
     if (!isMultipleQuery(fields)) {
-      return [parseRowQueryResult(<mysql.RowDataPacket[]>result.data, fields, commands[0])];
+      return [parseRowQueryResult(<mysql.RowDataPacket[]>data, <mysql.FieldPacket[]>fields, commands[0])];
     }
 
-    const data = <mysql.RowDataPacket[][]>result.data;
-    return data.map((_, idx) => {
-      return parseRowQueryResult(data[idx], fields, commands[idx])
+    return (<mysql.RowDataPacket[][]>data).map((_, idx) => {
+      return parseRowQueryResult(
+        (<mysql.RowDataPacket[][]>data)[idx],
+        (<mysql.FieldPacket[][]>fields)[idx],
+        commands[idx]
+      )
     });
   }
 
@@ -521,7 +528,7 @@ function parseRowQueryResult(
 }
 
 
-function isMultipleQuery(fields: mysql.FieldPacket[]) {
+function isMultipleQuery(fields: mysql.FieldPacket[] | mysql.FieldPacket[][]) {
   if (!fields) { return false; }
   if (!fields.length) { return false; }
   return (Array.isArray(fields[0]) || fields[0] === undefined);
