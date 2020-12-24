@@ -47,7 +47,20 @@ export default class MysqlAdapter extends AbstractAdapter {
   }
 
   configDatabase() {
-    const config = {
+    const config: {
+      host?: string;
+      port?: number;
+      user?: string;
+      password?: string;
+      database: string;
+      multipleStatements: true;
+      dateStrings: true;
+      supportBigNumbers: true;
+      bigNumberStrings: true;
+      ssl?: {
+        rejectUnauthorized: false;
+      }
+    } = {
       host: this.server.config.host,
       port: this.server.config.port,
       user: this.server.config.user,
@@ -57,7 +70,6 @@ export default class MysqlAdapter extends AbstractAdapter {
       dateStrings: true,
       supportBigNumbers: true,
       bigNumberStrings: true,
-      ssl: {},
     };
 
     if (this.server.sshTunnel) {
