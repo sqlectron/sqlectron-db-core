@@ -409,7 +409,7 @@ export default class MysqlAdapter extends AbstractAdapter {
 
       const truncateAll = data.map((row) => `
         SET FOREIGN_KEY_CHECKS = 0;
-        TRUNCATE TABLE ${wrapIdentifier(schema)}.${wrapIdentifier(row.table_name)};
+        TRUNCATE TABLE ${this.wrapIdentifier(schema)}.${this.wrapIdentifier(row.table_name)};
         SET FOREIGN_KEY_CHECKS = 1;
       `).join('');
 
@@ -481,10 +481,7 @@ export default class MysqlAdapter extends AbstractAdapter {
 }
 
 export function wrapIdentifier(value: string): string {
-  if (value === '*') return value;
-  const matched = value.match(/(.*?)(\[[0-9]\])/); // eslint-disable-line no-useless-escape
-  if (matched) return wrapIdentifier(matched[1]) + matched[2];
-  return `"${value.replace(/"/g, '""')}"`;
+  return value !== '*' ? `\`${value.replace(/`/g, '``')}\`` : '*';
 }
 
 
@@ -493,13 +490,6 @@ function identifyCommands(queryText: string): Result[] {
     return identify(queryText, { strict: false });
   } catch (err) {
     return [];
-  }
-}
-
-function resolveExecutionType(executioType: string) {
-  switch (executioType) {
-    case 'MODIFICATION': return 'run';
-    default: return 'all';
   }
 }
 
