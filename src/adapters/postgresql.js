@@ -1,7 +1,7 @@
 import pg from 'pg';
 import { identify } from 'sql-query-identifier';
 
-import { buildDatabseFilter, buildSchemaFilter } from './utils';
+import { buildDatabaseFilter, buildSchemaFilter } from '../filters';
 import createLogger from '../logger';
 import { createCancelablePromise, versionCompare } from '../utils';
 
@@ -330,7 +330,7 @@ export async function executeQuery(conn, queryText) {
 
 
 export async function listDatabases(conn, filter) {
-  const databaseFilter = buildDatabseFilter(filter, 'datname');
+  const databaseFilter = buildDatabaseFilter(filter, 'datname');
   const sql = `
     SELECT datname
     FROM pg_database

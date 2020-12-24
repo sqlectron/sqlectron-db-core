@@ -1,5 +1,5 @@
 import type { Database } from '../database';
-import type { ListDatabaseFilter } from '../filters';
+import type { DatabaseFilter, SchemaFilter } from '../filters';
 import type { Server } from '../server';
 
 export interface AdapterVersion {
@@ -42,11 +42,13 @@ export abstract class AbstractAdapter {
     return this.version;
   }
 
-  listSchemas(filter: unknown): Promise<string[]> {
+  abstract listDatabases(filter: DatabaseFilter): Promise<string[]>;
+
+  listSchemas(filter: SchemaFilter): Promise<string[]> {
     return Promise.resolve([]);
   }
 
-  abstract listTables(filter: unknown): Promise<{name: string}[]>;
+  abstract listTables(filter: SchemaFilter): Promise<{name: string}[]>;
 
   listViews(filter: unknown): Promise<{name: string}[]> {
     return Promise.resolve([]);
@@ -78,8 +80,6 @@ export abstract class AbstractAdapter {
   }[]> {
     return Promise.resolve([]);
   }
-
-  abstract listDatabases(filter: ListDatabaseFilter): Promise<string[]>;
 
   getQuerySelectTop(table: string, limit: number, schema: string) {
     return `SELECT * FROM ${this.wrapIdentifier(table)} LIMIT ${limit}`;

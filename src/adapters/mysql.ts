@@ -8,7 +8,7 @@ import { AbstractAdapter } from './abstract_adapter';
 import type { Result } from 'sql-query-identifier';
 import type { QueryArgs, QueryRowResult } from './abstract_adapter';
 import type { Database } from '../database';
-import type { ListDatabaseFilter } from '../filters';
+import type { DatabaseFilter } from '../filters';
 import type { Server } from '../server';
 
 const logger = createLogger('db:clients:mysql');
@@ -311,7 +311,7 @@ export default class MysqlAdapter extends AbstractAdapter {
     return (<mysql.RowDataPacket[]>data).map((row) => row.Key_name);
   }
 
-  async listDatabases(filter: ListDatabaseFilter) {
+  async listDatabases(filter: DatabaseFilter) {
     const sql = 'show databases';
 
     const { data } = await this.driverExecuteQuery({ query: sql });
@@ -536,7 +536,7 @@ function isMultipleQuery(fields: mysql.FieldPacket[] | mysql.FieldPacket[][]) {
 
 function filterDatabase(
   item: mysql.RowDataPacket,
-  { database }: ListDatabaseFilter = {},
+  { database }: DatabaseFilter = {},
   databaseField: string
 ) {
   if (!database) { return true; }

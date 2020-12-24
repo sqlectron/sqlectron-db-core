@@ -3,7 +3,7 @@ import { adapterFactory } from './adapters';
 import createLogger from './logger';
 
 import type { AddressInfo } from 'net';
-import type { ListDatabaseFilter } from './filters';
+import type { DatabaseFilter } from './filters';
 import type { Server } from './server';
 import type { AbstractAdapter } from './adapters/abstract_adapter';
 
@@ -157,7 +157,7 @@ export class Database {
     return this.connection!.executeQuery(queryText);
   }
 
-  listDatabases(filter: ListDatabaseFilter) {
+  listDatabases(filter: DatabaseFilter) {
     this.checkIsConnected();
     return this.connection!.listDatabases(filter);
   }

@@ -1,7 +1,7 @@
 import { connect } from 'mssql';
 import { identify } from 'sql-query-identifier';
 
-import { buildDatabseFilter, buildSchemaFilter } from './utils';
+import { buildDatabaseFilter, buildSchemaFilter } from '../filters';
 import createLogger from '../logger';
 
 const logger = createLogger('db:clients:sqlserver');
@@ -267,7 +267,7 @@ export async function listSchemas(conn, filter) {
 }
 
 export async function listDatabases(conn, filter) {
-  const databaseFilter = buildDatabseFilter(filter, 'name');
+  const databaseFilter = buildDatabaseFilter(filter, 'name');
   const sql = `
     SELECT name
     FROM sys.databases
