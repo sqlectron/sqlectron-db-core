@@ -4,10 +4,12 @@ import { identify } from 'sql-query-identifier';
 import createLogger from '../logger';
 import { createCancelablePromise } from '../utils';
 import { AbstractAdapter } from './abstract_adapter';
-import type { DatabaseFilter, QueryArgs, QueryRowResult } from './abstract_adapter';
-import type { Server } from '../server';
-import type { Database } from '../database';
+
 import type { Result } from 'sql-query-identifier';
+import type { QueryArgs, QueryRowResult } from './abstract_adapter';
+import type { Database } from '../database';
+import type { ListDatabaseFilter } from '../filters';
+import type { Server } from '../server';
 
 const logger = createLogger('db:clients:mysql');
 
@@ -290,7 +292,7 @@ export default class MysqlAdapter extends AbstractAdapter {
     return (<mysql.RowDataPacket[]>data).map((row) => row.Key_name);
   }
 
-  async listDatabases(filter: DatabaseFilter) {
+  async listDatabases(filter: ListDatabaseFilter) {
     const sql = 'show databases';
 
     const { data } = await this.driverExecuteQuery({ query: sql });
@@ -525,7 +527,7 @@ function isMultipleQuery(fields: mysql.FieldPacket[]) {
 
 function filterDatabase(
   item: mysql.RowDataPacket,
-  { database }: DatabaseFilter = {},
+  { database }: ListDatabaseFilter = {},
   databaseField: string
 ) {
   if (!database) { return true; }
