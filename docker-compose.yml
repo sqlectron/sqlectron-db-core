@@ -24,7 +24,7 @@ services:
   postgres:
     image: postgres:9.4.5
     ports:
-      - 5432
+      - 5432:5432
     environment:
       POSTGRES_PASSWORD: Password12!
       POSTGRES_DB: sqlectron
@@ -34,7 +34,7 @@ services:
   redshift:
     image: foundryai/postgres8:redshift
     ports:
-      - 5433:5432
+      - 5433:5433
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_DATABASE: sqlectron
