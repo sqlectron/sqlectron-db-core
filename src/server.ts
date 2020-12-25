@@ -2,9 +2,10 @@ import type { Server as NetServer } from 'net';
 import { Database } from './database';
 import { ADAPTERS } from './adapters';
 
-export interface ServerConfig {
+export interface LegacyServerConfig {
   name: string;
-  adapter: string;
+  client?: string;
+  adapter?: string;
   host?: string;
   socketPath?: string;
   port?: number;
@@ -27,6 +28,10 @@ export interface ServerConfig {
     ca?: string;
     cert?: string;
   } | false;
+}
+
+export interface ServerConfig extends LegacyServerConfig {
+  adapter: string;
 }
 
 export class Server {
@@ -80,14 +85,20 @@ export class Server {
   }
 }
 
-export function createServer(serverConfig: ServerConfig): Server {
+export function createServer(serverConfig: LegacyServerConfig): Server {
   if (!serverConfig) {
     throw new Error('Missing server configuration');
   }
 
-  if (!ADAPTERS.some((adapter) => adapter.key === serverConfig.adapter)) {
-    throw new Error('Invalid SQL adapter');
+  if (!serverConfig.adapter && serverConfig.client) {
+    serverConfig.adapter = serverConfig.client;
   }
 
-  return new Server(serverConfig);
+  const config: ServerConfig = serverConfig as ServerConfig;
+
+  if (!ADAPTERS.some((adapter) => adapter.key === config.adapter)) {
+    throw new Error(`Invalid SQL adapter: ${config.adapter}`);
+  }
+
+  return new Server(config);
 }

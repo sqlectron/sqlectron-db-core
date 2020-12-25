@@ -81,6 +81,19 @@ describe('db', () => {
 
           return expect(dbConn.connect()).to.not.be.rejected;
         });
+
+        it('should connect into server using client key', () => {
+          const serverInfo = {
+            ...config[dbAdapter],
+            name: dbAdapter,
+            client: dbAdapter,
+          };
+
+          const serverSession = db.createServer(serverInfo);
+          const dbConn = serverSession.createConnection(serverInfo.database);
+
+          return expect(dbConn.connect()).to.not.be.rejected;
+        })
       });
 
       describe('given is already connected', () => {
