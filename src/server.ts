@@ -12,6 +12,8 @@ export interface ServerConfig {
   localPort?: number;
   user?: string;
   password?: string;
+  applicationName?: string;
+  domain?: string;
   ssh?: {
     user: string;
     password?: string;
@@ -24,7 +26,7 @@ export interface ServerConfig {
     key: string;
     ca: string;
     cert: string;
-  }
+  } | false;
 };
 
 export class Server {

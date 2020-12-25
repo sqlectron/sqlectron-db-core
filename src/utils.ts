@@ -2,8 +2,11 @@ import fs from 'fs';
 import { homedir } from 'os';
 import path from 'path';
 import pf from 'portfinder';
+import { identify } from 'sql-query-identifier';
 
 import { CanceledByUserError } from './errors';
+
+import type { Result } from 'sql-query-identifier';
 
 export function readFile(filename: string): Promise<string> {
   const filePath = resolveHomePathToAbsolute(filename);
@@ -82,4 +85,12 @@ export function versionCompare(a: string, b: string): -1 | 0 | 1 {
     }
   }
   return 0;
+}
+
+export function identifyCommands(queryText: string): Result[] {
+  try {
+    return identify(queryText);
+  } catch (err) {
+    return [];
+  }
 }

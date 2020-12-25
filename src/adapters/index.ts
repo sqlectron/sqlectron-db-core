@@ -1,10 +1,10 @@
 /*
-const postgresql = require('./postgresql');
-const sqlserver = require('./sqlserver');
 const cassandra = require('./cassandra');
 */
 import MysqlAdapter from './mysql';
+import PostgresqlAdapter from './postgresql';
 import SqliteAdapter from './sqlite';
+import SqlServerAdapter from './sqlserver';
 import type { AbstractAdapter } from './abstract_adapter';
 import type { Database } from '../database';
 import type { Server } from '../server';
@@ -105,8 +105,13 @@ export function adapterFactory(
     case 'mysql':
     case 'mariadb':
       return new MysqlAdapter(server, database);
+    case 'postgres':
+    case 'redshift':
+      return new PostgresqlAdapter(server, database);
     case 'sqlite':
       return new SqliteAdapter(server, database);
+    case 'sqlserver':
+      return new SqlServerAdapter(server, database);
     default:
       throw new Error(`Requested adapter for unknown adapter: ${adapter}`);
   }
