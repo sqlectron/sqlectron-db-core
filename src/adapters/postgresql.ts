@@ -49,8 +49,11 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       password?: string;
       database: string;
       max: 5;
-      ssl: {
-        rejectUnauthorized: boolean;
+      ssl?: {
+        key?: string;
+        ca?: string;
+        cert?: string;
+        rejectUnauthorized?: boolean;
       }
     } = {
       host: this.server.config.host,
@@ -59,9 +62,6 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       password: this.server.config.password,
       database: this.database.database,
       max: 5, // max idle connections per time (30 secs)
-      ssl: {
-        rejectUnauthorized: false,
-      }
     };
 
     if (this.server.sshTunnel) {

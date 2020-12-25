@@ -105,7 +105,7 @@ export function adapterFactory(
     case 'mysql':
     case 'mariadb':
       return new MysqlAdapter(server, database);
-    case 'postgres':
+    case 'postgresql':
     case 'redshift':
       return new PostgresqlAdapter(server, database);
     case 'sqlite':

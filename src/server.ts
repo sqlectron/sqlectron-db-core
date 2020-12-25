@@ -23,9 +23,9 @@ export interface ServerConfig {
     port: number;
   };
   ssl?: {
-    key: string;
-    ca: string;
-    cert: string;
+    key?: string;
+    ca?: string;
+    cert?: string;
   } | false;
 };
 
