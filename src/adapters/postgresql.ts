@@ -184,8 +184,8 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     const sql = `
       SELECT
         routine_schema as schema,
-        routine_name as routineName,
-        routine_type as routineType
+        routine_name as "routineName",
+        routine_type as "routineType"
       FROM information_schema.routines
       ${schemaFilter ? `WHERE ${schemaFilter}` : ''}
       GROUP BY routine_schema, routine_name, routine_type
@@ -199,7 +199,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
 
   async listTableColumns(table: string, schema: string = this.defaultSchema): Promise<ListTableColumnsResult[]> {
     const sql = `
-      SELECT column_name as columnName, data_type as dataType
+      SELECT column_name as "columnName", data_type as "dataType"
       FROM information_schema.columns
       WHERE table_schema = $1
       AND table_name = $2
@@ -289,12 +289,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
   async getTableKeys(table: string, schema: string = this.defaultSchema): Promise<TableKeysResult[]> {
     const sql = `
       SELECT
-        tc.constraint_name as constraintName,
-        kcu.column_name as columnName,
+        tc.constraint_name as "constraintName",
+        kcu.column_name as "columnName",
         CASE WHEN tc.constraint_type LIKE '%FOREIGN%' THEN ctu.table_name
         ELSE NULL
-        END AS referencedTable,
-        tc.constraint_type as keyType
+        END AS "referencedTable",
+        tc.constraint_type as "keyType"
       FROM information_schema.table_constraints AS tc
       JOIN information_schema.key_column_usage AS kcu
         USING (constraint_schema, constraint_name)
