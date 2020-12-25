@@ -71,6 +71,8 @@ export default class SqlServerAdapter extends AbstractAdapter {
   }
 
   async connect() {
+    logger().debug('connecting');
+
     const version = (await this.driverExecuteSingleQuery({
       query: "SELECT @@version as 'version'"
     })).data[0].version;
@@ -80,6 +82,8 @@ export default class SqlServerAdapter extends AbstractAdapter {
       version: version.match(/^Microsoft SQL Server ([0-9]{4})/)[1],
       string: version,
     };
+
+    logger().debug('connected');
   }
 
   async disconnect() {

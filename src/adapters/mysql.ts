@@ -90,6 +90,8 @@ export default class MysqlAdapter extends AbstractAdapter {
   }
 
   async connect() {
+    logger().debug('connecting');
+
     const versionInfo = <mysql.RowDataPacket[]>(await this.driverExecuteQuery({
       query: "SHOW VARIABLES WHERE variable_name='version' OR variable_name='version_comment';",
     })).data;
@@ -122,6 +124,8 @@ export default class MysqlAdapter extends AbstractAdapter {
     } else if (lowerComment.includes('percona')) {
       this.version.name = 'Percona';
     }
+
+    logger().debug('connected');
   }
 
   disconnect(): Promise<void> {

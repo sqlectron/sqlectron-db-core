@@ -45,7 +45,8 @@ export default class SqliteAdapter extends AbstractAdapter {
   // using a different thread for each connection.
   // This may cause connection limit problem. So we may have to change this at some point.
   async connect() {
-    // light solution to test connection with with the server
+    logger().debug('connecting');
+
     const result = <QueryResult>(await this.driverExecuteQuery({ query: 'SELECT sqlite_version() as version' }));
     if (!result.data || result.data?.length === 0) {
       throw new Error('Failed to fetch version information');
@@ -56,6 +57,8 @@ export default class SqliteAdapter extends AbstractAdapter {
       version,
       string: `SQLite ${version}`,
     };
+
+    logger().debug('connected');
   }
 
   query(queryText: string) {

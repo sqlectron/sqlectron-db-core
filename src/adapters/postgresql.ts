@@ -87,6 +87,8 @@ export default class PostgresqlAdapter extends AbstractAdapter {
   }
 
   async connect() {
+    logger().debug('connecting');
+
     this.defaultSchema = await this.getSchema();
 
     const version = (await this.driverExecuteSingleQuery({
