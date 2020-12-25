@@ -1,11 +1,20 @@
 import sqlite3 from 'sqlite3';
-import type { RunResult } from 'sqlite3';
 import { identify, Result } from 'sql-query-identifier';
 
 import createLogger from '../logger';
 import { Adapter, ADAPTERS } from './';
 import { AbstractAdapter } from './abstract_adapter';
-import type { QueryArgs, QueryRowResult } from './abstract_adapter';
+
+import type { RunResult } from 'sqlite3';
+
+import type {
+  QueryArgs,
+  QueryRowResult,
+  QueryReturn,
+  ListTableColumnsResult,
+  ListTableResult,
+  ListViewResult
+} from './abstract_adapter';
 import type { Server } from '../server';
 import type { Database } from '../database';
 
@@ -16,11 +25,11 @@ const sqliteErrors = {
 };
 
 interface QueryResult {
-  data?: any[];
+  data?: unknown[];
   lastID: number;
   changes: number;
   statement: Result;
-};
+}
 
 export default class SqliteAdapter extends AbstractAdapter {
   conn: {
@@ -35,7 +44,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     this.conn = {dbConfig};
   }
 
-  configDatabase() {
+  configDatabase(): {database: string} {
     return {
       database: this.database.database || <string>(<Adapter>ADAPTERS.find(
         (adapter) => adapter.key === 'sqlite'
@@ -47,7 +56,7 @@ export default class SqliteAdapter extends AbstractAdapter {
   // for every query request. This allows multiple request at same time by
   // using a different thread for each connection.
   // This may cause connection limit problem. So we may have to change this at some point.
-  async connect() {
+  async connect(): Promise<void> {
     logger().debug('connecting');
 
     const result = <QueryResult>(await this.driverExecuteQuery({ query: 'SELECT sqlite_version() as version' }));
@@ -64,7 +73,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     logger().debug('connected');
   }
 
-  query(queryText: string) {
+  query(queryText: string): QueryReturn {
     let queryConnection: sqlite3.Database | null = null;
 
     return {
@@ -77,8 +86,8 @@ export default class SqliteAdapter extends AbstractAdapter {
 
             return result;
           } catch (err) {
-            if (err.code === sqliteErrors.CANCELED) {
-              err.sqlectronError = 'CANCELED_BY_USER';
+            if ((err as {code: string}).code === sqliteErrors.CANCELED) {
+              (err as {sqlectronError: string}).sqlectronError = 'CANCELED_BY_USER';
             }
 
             throw err;
@@ -104,7 +113,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     });
   }
 
-  async listTables(filter: unknown, connection?: sqlite3.Database) {
+  async listTables(filter: unknown, connection?: sqlite3.Database): Promise<ListTableResult[]> {
     const sql = `
       SELECT name
       FROM sqlite_master
@@ -114,10 +123,10 @@ export default class SqliteAdapter extends AbstractAdapter {
 
     const { data } = <QueryResult>await this.driverExecuteQuery({ query: sql }, connection);
 
-    return <{name: string}[]>data;
+    return <ListTableResult[]>data;
   }
 
-  async listViews() {
+  async listViews(): Promise<ListViewResult[]> {
     const sql = `
       SELECT name
       FROM sqlite_master
@@ -126,10 +135,10 @@ export default class SqliteAdapter extends AbstractAdapter {
 
     const { data } = <QueryResult>await this.driverExecuteQuery({ query: sql });
 
-    return <{name: string}[]>data;
+    return <ListViewResult[]>data;
   }
 
-  async listTableColumns(table: string) {
+  async listTableColumns(table: string): Promise<ListTableColumnsResult[]> {
     const sql = `PRAGMA table_info('${table}')`;
 
     const { data } = <QueryResult>await this.driverExecuteQuery({ query: sql });
@@ -140,7 +149,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     }));
   }
 
-  async listTableTriggers(table: string) {
+  async listTableTriggers(table: string): Promise<string[]> {
     const sql = `
       SELECT name
       FROM sqlite_master
@@ -153,7 +162,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     return (<{name: string}[]>data).map((row) => row.name);
   }
 
-  async listTableIndexes(table: string) {
+  async listTableIndexes(table: string): Promise<string[]> {
     const sql = `PRAGMA INDEX_LIST('${table}')`;
 
     const { data } = <QueryResult>await this.driverExecuteQuery({ query: sql });
@@ -161,7 +170,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     return (<{name: string}[]>data).map((row) => row.name);
   }
 
-  async listDatabases() {
+  async listDatabases(): Promise<string[]> {
     const sql = 'PRAGMA database_list;';
 
     const { data } = <QueryResult>await this.driverExecuteQuery({ query: sql });
@@ -169,11 +178,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     return (<{file: string}[]>data).map((row) => row.file || ':memory:');
   }
 
-  getTableKeys() {
-    return Promise.resolve([]); // TODO: not implemented yet
-  }
-
-  async getTableCreateScript(table: string) {
+  async getTableCreateScript(table: string): Promise<string[]> {
     const sql = `
       SELECT sql
       FROM sqlite_master
@@ -185,7 +190,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     return (<{sql: string}[]>data).map((row) => row.sql);
   }
 
-  async getViewCreateScript(view: string) {
+  async getViewCreateScript(view: string): Promise<string[]> {
     const sql = `
       SELECT sql
       FROM sqlite_master
@@ -197,11 +202,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     return (<{sql: string}[]>data).map((row) => row.sql);
   }
 
-  getRoutineCreateScript() {
-    return Promise.resolve([]); // DOES NOT SUPPORT IT
-  }
-
-  async truncateAllTables() {
+  async truncateAllTables(): Promise<void> {
     await this.runWithConnection(async (connection) => {
       const tables = await this.listTables(null, connection);
 
@@ -220,17 +221,17 @@ export default class SqliteAdapter extends AbstractAdapter {
     const runQuery = (
       connection: sqlite3.Database,
       { executionType, text }: Result
-    ): Promise<{data?: any[], lastID: number, changes: number}> => new Promise((resolve, reject) => {
+    ): Promise<{data?: unknown[], lastID: number, changes: number}> => new Promise((resolve, reject) => {
       const method = resolveExecutionType(executionType);
-      connection[method](text, queryArgs.params, function (err: Error | null, data?: any[]) {
+      connection[method](text, queryArgs.params, function (err: Error | null, data?: unknown[]) {
         if (err) {
           return reject(err);
         }
 
         return resolve({
           data,
-          lastID: (<RunResult>this).lastID,
-          changes: (<RunResult>this).changes,
+          lastID: (this as RunResult).lastID, // eslint-disable-line @typescript-eslint/no-unnecessary-type-assertion
+          changes: (this as RunResult).changes, // eslint-disable-line @typescript-eslint/no-unnecessary-type-assertion
         });
       });
     });
@@ -259,21 +260,20 @@ export default class SqliteAdapter extends AbstractAdapter {
 
   runWithConnection<T>(run: (conn: sqlite3.Database) => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
-      const db = new sqlite3.Database(this.conn.dbConfig.database, async (err) => {
+      const db = new sqlite3.Database(this.conn.dbConfig.database, (err) => {
         if (err) {
           reject(err);
           return;
         }
 
-        try {
-          db.serialize();
-          const results = await run(db);
+        db.serialize();
+        run(db).then((results) => {
           resolve(results);
-        } catch (runErr) {
+        }).catch((runErr) => {
           reject(runErr);
-        } finally {
+        }).finally(() => {
           db.close();
-        }
+        });
       });
     });
   }
@@ -285,14 +285,14 @@ export default class SqliteAdapter extends AbstractAdapter {
 
 export function wrapIdentifier(value: string): string {
   if (value === '*') return value;
-  const matched = value.match(/(.*?)(\[[0-9]\])/); // eslint-disable-line no-useless-escape
+  const matched = /(.*?)(\[[0-9]\])/.exec(value);
   if (matched) return wrapIdentifier(matched[1]) + matched[2];
   return `"${value.replace(/"/g, '""')}"`;
 }
 
 
 function parseRowQueryResult({ data, statement, changes }: {
-  data?: any[],
+  data?: any[], // eslint-disable-line @typescript-eslint/no-explicit-any
   statement: Result,
   changes: number,
 }): QueryRowResult {

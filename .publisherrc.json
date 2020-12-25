@@ -1,0 +1,6 @@
+{
+      // "steps": [],     // list of steps to run, defaults to lint, build, test
+      // "outDir": "",    // directory to publish, it omitted publisher will try to infere this
+      // "publish": true  // whether to run npm publish or not at end
+      // "clean": true    // whether to delete outDir before running, defaults to true
+  }

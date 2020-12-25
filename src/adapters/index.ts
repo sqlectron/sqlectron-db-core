@@ -1,6 +1,4 @@
-/*
-const cassandra = require('./cassandra');
-*/
+import CassandraAdapter from './cassandra';
 import MysqlAdapter from './mysql';
 import PostgresqlAdapter from './postgresql';
 import SqliteAdapter from './sqlite';
@@ -8,7 +6,6 @@ import SqlServerAdapter from './sqlserver';
 import type { AbstractAdapter } from './abstract_adapter';
 import type { Database } from '../database';
 import type { Server } from '../server';
-import CassandraAdapter from './cassandra';
 
 export interface Adapter {
   key: string;

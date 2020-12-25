@@ -1,5 +1,4 @@
 import * as cassandra from 'cassandra-driver';
-import { identify } from 'sql-query-identifier';
 import { Database } from '../database';
 
 import createLogger from '../logger';
@@ -10,11 +9,21 @@ import { AbstractAdapter, QueryRowResult } from './abstract_adapter';
 const logger = createLogger('db:clients:cassandra');
 
 declare module 'cassandra-driver' {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace metadata {
     interface Metadata {
       keyspaces: { [name: string]: { name: string, strategy: string }};
     }
   }
+}
+
+interface Config {
+  contactPoints: (string)[];
+  protocolOptions: {
+    port?: number;
+  };
+  keyspace?: string;
+  authProvider?: cassandra.auth.PlainTextAuthProvider;
 }
 
 /**
@@ -31,15 +40,8 @@ export default class CassandraAdapter extends AbstractAdapter {
     this.client = new cassandra.Client(dbConfig);
   }
 
-  configDatabase() {
-    const config: {
-      contactPoints: (string)[];
-      protocolOptions: {
-        port?: number;
-      };
-      keyspace?: string;
-      authProvider?: cassandra.auth.PlainTextAuthProvider;
-    } = {
+  configDatabase(): Config {
+    const config: Config = {
       contactPoints: [<string>this.server.config.host],
       protocolOptions: {
         port: this.server.config.port,
@@ -70,7 +72,7 @@ export default class CassandraAdapter extends AbstractAdapter {
   connect(): Promise<void> {
     logger().debug('connecting');
     return new Promise((resolve, reject) => {
-      this.client.connect(async (err: any) => {
+      this.client.connect((err: unknown) => {
         if (err) {
           this.client.shutdown();
           return reject(err);
@@ -87,8 +89,15 @@ export default class CassandraAdapter extends AbstractAdapter {
     });
   }
 
-  async disconnect() {
-    this.client.shutdown();
+  async disconnect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.client.shutdown((err: unknown) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      });
+    });
   }
 
   listDatabases(): Promise<string[]> {
@@ -117,7 +126,7 @@ export default class CassandraAdapter extends AbstractAdapter {
       const params = [this.database.database];
       this.client.execute(sql, params, (err, data) => {
         if (err) return reject(err);
-        resolve(data.rows.map((row) => ({ name: row.name })));
+        resolve(data.rows.map((row) => ({ name: row.name as string })));
       });
     });
   }
@@ -159,9 +168,9 @@ export default class CassandraAdapter extends AbstractAdapter {
               }
               return b.position - a.position;
             }).map((row) => {
-              const rowType = cassandra2 ? mapLegacyDataTypes(row.type) : row.type;
+              const rowType = cassandra2 ? mapLegacyDataTypes(row.type as string) : row.type as string;
               return {
-                columnName: row.column_name,
+                columnName: row.column_name as string,
                 dataType: rowType,
               };
             }),
@@ -197,7 +206,7 @@ export default class CassandraAdapter extends AbstractAdapter {
     });
   }
 
-  async truncateAllTables() {
+  async truncateAllTables(): Promise<void> {
     const result = await this.listTables();
     const tables = result.map((table) => table.name);
     const promises = tables.map((t) => {
@@ -211,9 +220,9 @@ export default class CassandraAdapter extends AbstractAdapter {
     });
 
     await Promise.all(promises);
-  };
+  }
 
-  query(queryText: string): never {
+  query(): never {
     throw new Error('"query" function is not implementd by cassandra client.');
   }
 
@@ -236,7 +245,7 @@ export default class CassandraAdapter extends AbstractAdapter {
 
 export function wrapIdentifier(value: string): string {
   if (value === '*') return value;
-  const matched = value.match(/(.*?)(\[[0-9]\])/); // eslint-disable-line no-useless-escape
+  const matched = /(.*?)(\[[0-9]\])/.exec(value);
   if (matched) return wrapIdentifier(matched[1]) + matched[2];
   return `"${value.replace(/"/g, '""')}"`;
 }

@@ -5,7 +5,7 @@ import createLogger from './logger';
 import type { AddressInfo } from 'net';
 import type { DatabaseFilter, SchemaFilter } from './filters';
 import type { Server } from './server';
-import type { AbstractAdapter, AdapterVersion } from './adapters/abstract_adapter';
+import type { AbstractAdapter, AdapterVersion, QueryRowResult } from './adapters/abstract_adapter';
 
 const logger = createLogger('db');
 
@@ -15,7 +15,7 @@ let selectLimit: number | null = null;
 export class Database {
   server: Server;
   database: string | undefined;
-  connecting: boolean = false;
+  connecting = false;
   connection: null | AbstractAdapter = null;
 
   constructor(server: Server, database?: string) {
@@ -37,13 +37,13 @@ export class Database {
     });
   }
 
-  checkIsConnected() {
+  checkIsConnected(): void {
     if (this.connecting || !this.connection) {
       throw new Error('There is no connection available.');
     }
   }
 
-  async connect() {
+  async connect(): Promise<void> {
     /* eslint no-param-reassign: 0 */
     if (this.connecting) {
       throw new Error('There is already a connection in progress for this database. Aborting this new request.');
@@ -54,7 +54,7 @@ export class Database {
 
       // terminate any previous lost connection for this DB
       if (this.connection) {
-        this.connection.disconnect();
+        void this.connection.disconnect();
       }
 
       // reuse existing tunnel
@@ -86,11 +86,11 @@ export class Database {
     }
   }
 
-  disconnect() {
+  disconnect(): void {
     this.connecting = false;
 
     if (this.connection) {
-      this.connection.disconnect();
+      void this.connection.disconnect();
       this.connection = null;
     }
 
@@ -99,105 +99,122 @@ export class Database {
 
   getVersion(): AdapterVersion {
     this.checkIsConnected();
-    return this.connection!.getVersion();
+    return (<AbstractAdapter>this.connection).getVersion();
   }
 
-  listDatabases(filter?: DatabaseFilter) {
+  listDatabases(filter?: DatabaseFilter): Promise<string[]> {
     this.checkIsConnected();
-    return this.connection!.listDatabases(filter);
+    return (<AbstractAdapter>this.connection).listDatabases(filter);
   }
 
-  listSchemas(filter: SchemaFilter) {
+  listSchemas(filter: SchemaFilter): Promise<string[]> {
     this.checkIsConnected();
-    return this.connection!.listSchemas(filter);
+    return (<AbstractAdapter>this.connection).listSchemas(filter);
   }
 
-  listTables(filter: SchemaFilter) {
+  listTables(filter: SchemaFilter): Promise<{name: string}[]> {
     this.checkIsConnected();
-    return this.connection!.listTables(filter);
+    return (<AbstractAdapter>this.connection).listTables(filter);
   }
 
-  listViews(filter: SchemaFilter) {
+  listViews(filter: SchemaFilter): Promise<{name: string}[]> {
     this.checkIsConnected();
-    return this.connection!.listViews(filter);
+    return (<AbstractAdapter>this.connection).listViews(filter);
   }
 
-  listRoutines(filter: SchemaFilter) {
+  listRoutines(filter: SchemaFilter): Promise<{
+    schema?: string;
+    routineName: string;
+    routineType: string;
+  }[]> {
     this.checkIsConnected();
-    return this.connection!.listRoutines(filter);
+    return (<AbstractAdapter>this.connection).listRoutines(filter);
   }
 
-  listTableColumns(table: string, schema?: string) {
+  listTableColumns(table: string, schema?: string): Promise<{
+    columnName: string;
+    dataType: string;
+  }[]> {
     this.checkIsConnected();
-    return this.connection!.listTableColumns(table, schema);
+    return (<AbstractAdapter>this.connection).listTableColumns(table, schema);
   }
 
-  listTableTriggers(table: string, schema?: string) {
+  listTableTriggers(table: string, schema?: string): Promise<string[]> {
     this.checkIsConnected();
-    return this.connection!.listTableTriggers(table, schema);
+    return (<AbstractAdapter>this.connection).listTableTriggers(table, schema);
   }
 
-  listTableIndexes(table: string, schema?: string) {
+  listTableIndexes(table: string, schema?: string): Promise<string[]> {
     this.checkIsConnected();
-    return this.connection!.listTableIndexes(table, schema);
+    return (<AbstractAdapter>this.connection).listTableIndexes(table, schema);
   }
 
-  getTableReferences(table: string, schema?: string) {
+  getTableReferences(table: string, schema?: string): Promise<string[]> {
     this.checkIsConnected();
-    return this.connection!.getTableReferences(table, schema);
+    return (<AbstractAdapter>this.connection).getTableReferences(table, schema);
   }
 
-  getTableKeys(table: string, schema?: string) {
+  getTableKeys(table: string, schema?: string): Promise<{
+    columnName: string;
+    keyType: string;
+    constraintName: string | null;
+    referencedTable: string | null;
+  }[]> {
     this.checkIsConnected();
-    return this.connection!.getTableKeys(table, schema);
+    return (<AbstractAdapter>this.connection).getTableKeys(table, schema);
   }
 
-  query(queryText: string) {
+  query(queryText: string): {
+    execute: () => Promise<QueryRowResult[]>;
+    cancel: () => void;
+  } {
     this.checkIsConnected();
-    return this.connection!.query(queryText);
+    return (<AbstractAdapter>this.connection).query(queryText);
   }
 
-  executeQuery(queryText: string) {
+  executeQuery(queryText: string): Promise<QueryRowResult[]> {
     this.checkIsConnected();
-    return this.connection!.executeQuery(queryText);
+    return (<AbstractAdapter>this.connection).executeQuery(queryText);
   }
 
-  async getQuerySelectTop(table: string, schema?: string, limit?: number) {
+  getQuerySelectTop(table: string, schema?: string, limit?: number): Promise<string> {
     this.checkIsConnected();
     let limitValue = limit;
     if (limit === undefined) {
       limitValue = (selectLimit !== null) ? selectLimit : DEFAULT_LIMIT;
     }
-    return this.connection!.getQuerySelectTop(table, <number>limitValue, schema);
+    return Promise.resolve(
+      (<AbstractAdapter>this.connection).getQuerySelectTop(table, <number>limitValue, schema)
+    );
   }
 
-  getTableCreateScript(table: string, schema?: string) {
+  getTableCreateScript(table: string, schema?: string): Promise<string[]> {
     this.checkIsConnected();
-    return this.connection!.getTableCreateScript(table, schema);
+    return (<AbstractAdapter>this.connection).getTableCreateScript(table, schema);
   }
 
-  async getTableSelectScript(table: string, schema?: string) {
+  async getTableSelectScript(table: string, schema?: string): Promise<string> {
     const columnNames = await this.getTableColumnNames(table, schema);
     const schemaSelection = this.resolveSchema(schema);
     return [
-      `SELECT ${(<string[]>this.wrap(columnNames)).join(', ')}`,
+      `SELECT ${columnNames.map((name) => this.wrap(name)).join(', ')}`,
       `FROM ${schemaSelection}${this.wrap(table)};`,
     ].join(' ');
   }
 
-  async getTableInsertScript(table: string, schema?: string) {
+  async getTableInsertScript(table: string, schema?: string): Promise<string> {
     const columnNames = await this.getTableColumnNames(table, schema);
     const schemaSelection = this.resolveSchema(schema);
     return [
       `INSERT INTO ${schemaSelection}${this.wrap(table)}`,
-      `(${(<string[]>this.wrap(columnNames)).join(', ')})\n`,
+      `(${columnNames.map((name) => this.wrap(name)).join(', ')})\n`,
       `VALUES (${columnNames.fill('?').join(', ')});`,
     ].join(' ');
   }
 
-  async getTableUpdateScript(table: string, schema?: string) {
+  async getTableUpdateScript(table: string, schema?: string): Promise<string> {
     const columnNames = await this.getTableColumnNames(table, schema);
-    const setColumnForm = (<string[]>this.wrap(columnNames)).map((col) => `${col}=?`).join(', ');
+    const setColumnForm = columnNames.map((col) => `${this.wrap(col)}=?`).join(', ');
     const schemaSelection = this.resolveSchema(schema);
     return [
       `UPDATE ${schemaSelection}${this.wrap(table)}\n`,
@@ -206,44 +223,40 @@ export class Database {
     ].join(' ');
   }
 
-  getTableDeleteScript(table: string, schema?: string) {
+  getTableDeleteScript(table: string, schema?: string): Promise<string> {
     const schemaSelection = this.resolveSchema(schema);
-    return [
+    return Promise.resolve([
       `DELETE FROM ${schemaSelection}${this.wrap(table)}`,
       'WHERE <condition>;',
-    ].join(' ');
+    ].join(' '));
   }
 
-  getViewCreateScript(view: string, schema?: string) {
+  getViewCreateScript(view: string, schema?: string): Promise<string[]> {
     this.checkIsConnected();
-    return this.connection!.getViewCreateScript(view, schema);
+    return (<AbstractAdapter>this.connection).getViewCreateScript(view, schema);
   }
 
-  getRoutineCreateScript(routine: string, type: string, schema?: string) {
+  getRoutineCreateScript(routine: string, type: string, schema?: string): Promise<string[]> {
     this.checkIsConnected();
-    return this.connection!.getRoutineCreateScript(routine, type, schema);
+    return (<AbstractAdapter>this.connection).getRoutineCreateScript(routine, type, schema);
   }
 
-  truncateAllTables(schema?: string) {
-    return this.connection!.truncateAllTables(schema);
+  truncateAllTables(schema?: string): Promise<void> {
+    return (<AbstractAdapter>this.connection).truncateAllTables(schema);
   }
 
-  async getTableColumnNames(table: string, schema?: string) {
+  async getTableColumnNames(table: string, schema?: string): Promise<string[]> {
     this.checkIsConnected();
-    const columns = await this.connection!.listTableColumns(table, schema);
+    const columns = await (<AbstractAdapter>this.connection).listTableColumns(table, schema);
     return columns.map((column) => column.columnName);
   }
 
-  resolveSchema(schema?: string) {
+  resolveSchema(schema?: string): string {
     return schema ? `${this.wrap(schema)}.` : '';
   }
 
-  wrap(identifier: string | string[]): string | string[] {
-    if (!Array.isArray(identifier)) {
-      return this.connection!.wrapIdentifier(identifier);
-    }
-
-    return identifier.map((item) => this.connection!.wrapIdentifier(item));
+  wrap(identifier: string): string {
+    return (<AbstractAdapter>this.connection).wrapIdentifier(identifier);
   }
 }
 

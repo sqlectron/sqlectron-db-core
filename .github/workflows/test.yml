@@ -68,7 +68,7 @@ jobs:
     - run: npm ci --build-from-source
       if: matrix.node-version == '12.x'
 
-    # - run: npm run lint
+    - run: npm run lint
     - run: npm run compile
 
     # Set-up containers that do not support initialization sequences

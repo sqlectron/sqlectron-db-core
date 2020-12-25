@@ -5,17 +5,39 @@ import { buildDatabaseFilter, buildSchemaFilter } from '../filters';
 import createLogger from '../logger';
 import { createCancelablePromise, versionCompare } from '../utils';
 import { Adapter, ADAPTERS } from './';
-import { AbstractAdapter, QueryArgs, QueryRowResult } from './abstract_adapter';
+import { AbstractAdapter, QueryArgs, QueryRowResult, TableKeysResult } from './abstract_adapter';
 
 import type { Database } from '../database';
 import type { DatabaseFilter, SchemaFilter } from '../filters';
 import type { Server } from '../server';
+import type {
+  QueryReturn,
+  ListTableResult,
+  ListViewResult,
+  ListRoutineResult,
+  ListTableColumnsResult
+} from './abstract_adapter'
 
 const logger = createLogger('db:clients:postgresql');
 
 const pgErrors = {
   CANCELED: '57014',
 };
+
+interface AdapterConfig {
+  host?: string;
+  port?: number;
+  user?: string;
+  password?: string;
+  database: string;
+  max: 5;
+  ssl?: {
+    key?: string;
+    ca?: string;
+    cert?: string;
+    rejectUnauthorized?: boolean;
+  }
+}
 
 /**
  * Do not convert DATE types to JS date.
@@ -30,7 +52,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
   conn: {
     pool: pg.Pool
   };
-  defaultSchema: string = 'public';
+  defaultSchema = 'public';
 
   constructor(server: Server, database: Database) {
     super(server, database);
@@ -43,21 +65,8 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     };
   }
 
-  configDatabase() {
-    const config: {
-      host?: string;
-      port?: number;
-      user?: string;
-      password?: string;
-      database: string;
-      max: 5;
-      ssl?: {
-        key?: string;
-        ca?: string;
-        cert?: string;
-        rejectUnauthorized?: boolean;
-      }
-    } = {
+  configDatabase(): AdapterConfig  {
+    const config: AdapterConfig = {
       host: this.server.config.host,
       port: this.server.config.port,
       user: this.server.config.user,
@@ -89,12 +98,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return config;
   }
 
-  async connect() {
+  async connect(): Promise<void> {
     logger().debug('connecting');
 
     this.defaultSchema = await this.getSchema();
 
-    const version = (await this.driverExecuteSingleQuery({
+    const version = (await this.driverExecuteSingleQuery<{version: string}>({
       query: 'select version()',
     })).rows[0].version;
     const splitVersion = version.split(' ');
@@ -108,19 +117,19 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     logger().debug('connected');
   }
 
-  disconnect() {
+  disconnect(): Promise<void> {
     return this.conn.pool.end();
   }
 
-  async getSchema() {
+  async getSchema(): Promise<string> {
     const sql = 'SELECT current_schema() AS schema';
 
-    const data = await this.driverExecuteSingleQuery({ query: sql });
+    const data = await this.driverExecuteSingleQuery<{schema: string}>({ query: sql });
 
     return data.rows[0].schema;
   }
 
-  async listDatabases(filter?: DatabaseFilter) {
+  async listDatabases(filter?: DatabaseFilter): Promise<string[]> {
     const databaseFilter = buildDatabaseFilter(filter, 'datname');
     const sql = `
       SELECT datname
@@ -132,12 +141,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
 
     const params = [false];
 
-    const data = await this.driverExecuteSingleQuery({ query: sql, params });
+    const data = await this.driverExecuteSingleQuery<{datname: string}>({ query: sql, params });
 
     return data.rows.map((row) => row.datname);
   }
 
-  async listTables(filter: SchemaFilter) {
+  async listTables(filter: SchemaFilter): Promise<ListTableResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'table_schema');
     const sql = `
       SELECT
@@ -149,12 +158,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       ORDER BY table_schema, table_name
     `;
 
-    const data = await this.driverExecuteSingleQuery({ query: sql });
+    const data = await this.driverExecuteSingleQuery<ListTableResult>({ query: sql });
 
     return data.rows;
   }
 
-  async listViews(filter: SchemaFilter) {
+  async listViews(filter: SchemaFilter): Promise<ListViewResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'table_schema');
     const sql = `
       SELECT
@@ -165,36 +174,32 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       ORDER BY table_schema, table_name
     `;
 
-    const data = await this.driverExecuteSingleQuery({ query: sql });
+    const data = await this.driverExecuteSingleQuery<ListViewResult>({ query: sql });
 
     return data.rows;
   }
 
-  async listRoutines(filter: SchemaFilter) {
+  async listRoutines(filter: SchemaFilter): Promise<ListRoutineResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'routine_schema');
     const sql = `
       SELECT
-        routine_schema,
-        routine_name,
-        routine_type
+        routine_schema as schema,
+        routine_name as routineName,
+        routine_type as routineType
       FROM information_schema.routines
       ${schemaFilter ? `WHERE ${schemaFilter}` : ''}
       GROUP BY routine_schema, routine_name, routine_type
       ORDER BY routine_schema, routine_name
     `;
 
-    const data = await this.driverExecuteSingleQuery({ query: sql });
+    const data = await this.driverExecuteSingleQuery<ListRoutineResult>({ query: sql });
 
-    return data.rows.map((row) => ({
-      schema: row.routine_schema,
-      routineName: row.routine_name,
-      routineType: row.routine_type,
-    }));
+    return data.rows;
   }
 
-  async listTableColumns(table: string, schema: string = this.defaultSchema) {
+  async listTableColumns(table: string, schema: string = this.defaultSchema): Promise<ListTableColumnsResult[]> {
     const sql = `
-      SELECT column_name, data_type
+      SELECT column_name as columnName, data_type as dataType
       FROM information_schema.columns
       WHERE table_schema = $1
       AND table_name = $2
@@ -206,15 +211,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       table,
     ];
 
-    const data = await this.driverExecuteSingleQuery({ query: sql, params });
+    const data = await this.driverExecuteSingleQuery<ListTableColumnsResult>({ query: sql, params });
 
-    return data.rows.map((row) => ({
-      columnName: row.column_name,
-      dataType: row.data_type,
-    }));
+    return data.rows;
   }
 
-  async listTableTriggers(table: string, schema: string = this.defaultSchema) {
+  async listTableTriggers(table: string, schema: string = this.defaultSchema): Promise<string[]> {
     const sql = `
       SELECT trigger_name
       FROM information_schema.triggers
@@ -227,12 +229,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       table,
     ];
 
-    const data = await this.driverExecuteSingleQuery({ query: sql, params });
+    const data = await this.driverExecuteSingleQuery<{trigger_name: string}>({ query: sql, params });
 
     return data.rows.map((row) => row.trigger_name);
   }
 
-  async listTableIndexes(table: string, schema: string = this.defaultSchema) {
+  async listTableIndexes(table: string, schema: string = this.defaultSchema): Promise<string[]> {
     const sql = `
       SELECT indexname as index_name
       FROM pg_indexes
@@ -245,12 +247,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       table,
     ];
 
-    const data = await this.driverExecuteSingleQuery({ query: sql, params });
+    const data = await this.driverExecuteSingleQuery<{index_name: string}>({ query: sql, params });
 
     return data.rows.map((row) => row.index_name);
   }
 
-  async listSchemas(filter: SchemaFilter) {
+  async listSchemas(filter: SchemaFilter): Promise<string[]> {
     const schemaFilter = buildSchemaFilter(filter);
     const sql = `
       SELECT schema_name
@@ -259,12 +261,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       ORDER BY schema_name
     `;
 
-    const data = await this.driverExecuteSingleQuery({ query: sql });
+    const data = await this.driverExecuteSingleQuery<{schema_name: string}>({ query: sql });
 
     return data.rows.map((row) => row.schema_name);
   }
 
-  async getTableReferences(table: string, schema: string = this.defaultSchema) {
+  async getTableReferences(table: string, schema: string = this.defaultSchema): Promise<string[]> {
     const sql = `
       SELECT ctu.table_name AS referenced_table_name
       FROM information_schema.table_constraints AS tc
@@ -279,20 +281,20 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       schema,
     ];
 
-    const data = await this.driverExecuteSingleQuery({ query: sql, params });
+    const data = await this.driverExecuteSingleQuery<{referenced_table_name: string}>({ query: sql, params });
 
     return data.rows.map((row) => row.referenced_table_name);
   }
 
-  async getTableKeys(table: string, schema: string = this.defaultSchema) {
+  async getTableKeys(table: string, schema: string = this.defaultSchema): Promise<TableKeysResult[]> {
     const sql = `
       SELECT
-        tc.constraint_name,
-        kcu.column_name,
+        tc.constraint_name as constraintName,
+        kcu.column_name as columnName,
         CASE WHEN tc.constraint_type LIKE '%FOREIGN%' THEN ctu.table_name
         ELSE NULL
-        END AS referenced_table_name,
-        tc.constraint_type
+        END AS referencedTable,
+        tc.constraint_type as keyType
       FROM information_schema.table_constraints AS tc
       JOIN information_schema.key_column_usage AS kcu
         USING (constraint_schema, constraint_name)
@@ -309,21 +311,16 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       schema,
     ];
 
-    const data = await this.driverExecuteSingleQuery({ query: sql, params });
+    const data = await this.driverExecuteSingleQuery<TableKeysResult>({ query: sql, params });
 
-    return data.rows.map((row) => ({
-      constraintName: row.constraint_name,
-      columnName: row.column_name,
-      referencedTable: row.referenced_table_name,
-      keyType: row.constraint_type,
-    }));
+    return data.rows;
   }
 
-  getQuerySelectTop(table: string, limit: number, schema: string = this.defaultSchema) {
+  getQuerySelectTop(table: string, limit: number, schema: string = this.defaultSchema): string {
     return `SELECT * FROM ${this.wrapIdentifier(schema)}.${this.wrapIdentifier(table)} LIMIT ${limit}`;
   }
 
-  async getTableCreateScript(table: string, schema: string = this.defaultSchema) {
+  async getTableCreateScript(table: string, schema: string = this.defaultSchema): Promise<string[]> {
     // Reference http://stackoverflow.com/a/32885178
 
     const params = [
@@ -339,7 +336,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       WHERE c.relname = $1
       AND n.nspname = $2
     `;
-    let createTable = (await this.driverExecuteSingleQuery({
+    let createTable = (await this.driverExecuteSingleQuery<{create_table: string}>({
       query: tableSql,
       params,
     })).rows[0].create_table;
@@ -365,7 +362,11 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       AND n.nspname = $2
       ORDER BY a.attnum ASC
     `;
-    const columnData = await this.driverExecuteSingleQuery({ query: columnSql, params });
+    const columnData = await this.driverExecuteSingleQuery<{
+      column_name: string;
+      type: string;
+      not_null: string;
+    }>({ query: columnSql, params });
 
     const columns: string[] = [];
     columnData.rows.forEach((row) => {
@@ -392,7 +393,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
         AND tc.table_schema = $2;
     `;
 
-    const constraintResult = (await this.driverExecuteSingleQuery({
+    const constraintResult = (await this.driverExecuteSingleQuery<{constraint: string}>({
       query: constraintSql,
       params,
     })).rows[0];
@@ -402,19 +403,23 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return [createTable];
   }
 
-  async getViewCreateScript(view: string, schema: string = this.defaultSchema) {
+  async getViewCreateScript(view: string, schema: string = this.defaultSchema): Promise<string[]> {
     const createViewSql = `CREATE OR REPLACE VIEW ${wrapIdentifier(schema)}.${view} AS`;
 
     const sql = 'SELECT pg_get_viewdef($1::regclass, true)';
 
     const params = [view];
 
-    const data = await this.driverExecuteSingleQuery({ query: sql, params });
+    const data = await this.driverExecuteSingleQuery<{pg_get_viewdef: string}>({ query: sql, params });
 
     return data.rows.map((row) => `${createViewSql}\n${row.pg_get_viewdef}`);
   }
 
-  async getRoutineCreateScript(routine: string, type: string, schema: string = this.defaultSchema) {
+  async getRoutineCreateScript(
+    routine: string,
+    type: string,
+    schema: string = this.defaultSchema
+  ): Promise<string[]> {
     let mapFunction;
     let sql;
     if (versionCompare(this.version.version, '8.4') >= 0) {
@@ -425,7 +430,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
         WHERE proname = $1
         AND n.nspname = $2
       `;
-      mapFunction = (row: {[column: string]: any}) => row.pg_get_functiondef;
+      mapFunction = (row: {[column: string]: unknown}): string => row.pg_get_functiondef as string;
     } else {
       // -- pg_catalog.array_to_string(p.proacl, '\n') AS "Access privileges",
       sql = `
@@ -460,19 +465,19 @@ export default class PostgresqlAdapter extends AbstractAdapter {
           AND n.nspname = $2
           AND pg_catalog.pg_function_is_visible(p.oid);
       `;
-      mapFunction = (row: {[column: string]: any}) => {
+      mapFunction = (row: {[column: string]: unknown}): string => {
         // TODO: expand support for other types as necessary
         if (row.protype !== 'func') {
-          return row.prosrc;
+          return row.prosrc as string;
         }
 
         let args = '';
-        if (row.proargtypes && row.proargtypes.length > 0) {
-          args = (row.proargtypes || '').split(', ').map(
-            (val: string, idx: number) => `${row.proargnames[idx]} ${val}`
+        if (row.proargtypes && (row.proargtypes as string).length > 0) {
+          args = (row.proargtypes as string || '').split(', ').map(
+            (val: string, idx: number) => `${(row.proargnames as string[])[idx]} ${val}`
           ).join(', ');
         }
-        return `CREATE OR REPLACE FUNCTION ${row.nspname}.${row.proname}(${args})\n  RETURNS ${row.prorettype} AS $$${row.prosrc}$$ LANGUAGE ${row.lanname} ${row.provolatility}`;
+        return `CREATE OR REPLACE FUNCTION ${row.nspname as string}.${row.proname as string}(${args})\n  RETURNS ${row.prorettype as string} AS $$${row.prosrc as string}$$ LANGUAGE ${row.lanname as string} ${row.provolatility as string}`;
       };
     }
 
@@ -481,12 +486,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       schema,
     ];
 
-    const data = await this.driverExecuteSingleQuery({ query: sql, params });
+    const data = await this.driverExecuteSingleQuery<{[column: string]: string}>({ query: sql, params });
 
     return data.rows.map(mapFunction);
   }
 
-  async truncateAllTables(schema: string = this.defaultSchema) {
+  async truncateAllTables(schema: string = this.defaultSchema): Promise<void> {
     await this.runWithConnection(async (connection) => {
       const sql = `
         SELECT quote_ident(table_name) as table_name
@@ -499,7 +504,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
         schema,
       ];
 
-      const data = await this.driverExecuteSingleQuery({ query: sql, params }, connection);
+      const data = await this.driverExecuteSingleQuery<{table_name: string}>({ query: sql, params }, connection);
 
       if (versionCompare(this.version.version, '8.4') >= 0) {
         const truncateAll = data.rows.map((row) => `
@@ -513,10 +518,10 @@ export default class PostgresqlAdapter extends AbstractAdapter {
         // under the hood the foreign key constraints so without it, we first have
         // to remove all of them, run the truncate, reset the sequences, and then
         // readd the constraints.
-        const seqData = await this.driverExecuteSingleQuery({
+        const seqData = await this.driverExecuteSingleQuery<{relname: string}>({
           query: "SELECT relname FROM pg_class WHERE relkind = 'S'",
         }, connection);
-        const disableTriggers = await this.driverExecuteSingleQuery({
+        const disableTriggers = await this.driverExecuteSingleQuery<{query: string}>({
           query: `
             SELECT 'ALTER TABLE '||quote_ident(nspname)||'.'||quote_ident(relname)||' DROP CONSTRAINT '||quote_ident(conname)||';' AS query
             FROM pg_constraint
@@ -526,7 +531,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
             ORDER BY nspname, relname, conname;
           `,
         }, connection);
-        const enableTriggers = await this.driverExecuteSingleQuery({
+        const enableTriggers = await this.driverExecuteSingleQuery<{query: string}>({
           query: `
             SELECT 'ALTER TABLE "'||nspname||'"."'||relname||'" ADD CONSTRAINT "'||conname||'" '|| pg_get_constraintdef(pg_constraint.oid)||';' AS query
             FROM pg_constraint
@@ -560,7 +565,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     });
   }
 
-  query(queryText: string) {
+  query(queryText: string): QueryReturn {
     let pid: number | null = null;
     let canceling = false;
     const cancelable = createCancelablePromise();
@@ -569,7 +574,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       execute: () => {
         return this.runWithConnection(async (connection: pg.PoolClient) => {
 
-          const dataPid = await this.driverExecuteSingleQuery({
+          const dataPid = await this.driverExecuteSingleQuery<{pid: number}>({
             query: 'SELECT pg_backend_pid() AS pid',
           }, connection);
 
@@ -584,9 +589,9 @@ export default class PostgresqlAdapter extends AbstractAdapter {
             pid = null;
             return <QueryRowResult[]>data;
           } catch (err) {
-            if (canceling && err.code === pgErrors.CANCELED) {
+            if (canceling && (err as {code: string}).code === pgErrors.CANCELED) {
               canceling = false;
-              err.sqlectronError = 'CANCELED_BY_USER';
+              (err as {sqlectronError: string}).sqlectronError = 'CANCELED_BY_USER';
             }
 
             throw err;
@@ -603,7 +608,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
 
         canceling = true;
         try {
-          const data = await this.driverExecuteSingleQuery({
+          const data = await this.driverExecuteSingleQuery<{pg_cancel_backend: boolean}>({
             query: `SELECT pg_cancel_backend(${pid});`,
           });
 
@@ -623,22 +628,22 @@ export default class PostgresqlAdapter extends AbstractAdapter {
   async executeQuery(queryText: string, connection?: pg.PoolClient): Promise<QueryRowResult[]> {
     const commands = identifyCommands(queryText).map((item) => item.type);
 
-    let data = await this.driverExecuteQuery({ query: queryText, multiple: true });
+    const data = await this.driverExecuteQuery({ query: queryText, multiple: true }, connection);
 
     return data
       .filter((result) => result.command !== null)
       .map((result, idx) => parseRowQueryResult(result, commands[idx]));
   }
 
-  async driverExecuteSingleQuery(
+  async driverExecuteSingleQuery<T>(
     queryArgs: QueryArgs,
     connection?: pg.PoolClient,
-  ): Promise<pg.QueryResult> {
+  ): Promise<pg.QueryResult<T>> {
     const result = await this.driverExecuteQuery(queryArgs, connection);
     return result[0];
   }
 
-  driverExecuteQuery(queryArgs: QueryArgs, connection?: pg.PoolClient) {
+  driverExecuteQuery(queryArgs: QueryArgs, connection?: pg.PoolClient): Promise<pg.QueryResult[]> {
     const runQuery = (connection: pg.PoolClient): Promise<pg.QueryResult[]> => {
       const args = {
         text: queryArgs.query,
@@ -663,7 +668,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
 
   async runWithConnection<T = pg.QueryResult[]>(
     run: (connection: pg.PoolClient) => Promise<T>
-  ) {
+  ): Promise<T> {
     const connection = await this.conn.pool.connect();
 
     try {
@@ -673,14 +678,14 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     }
   }
 
-  wrapIdentifier(value: string) {
+  wrapIdentifier(value: string): string {
     return wrapIdentifier(value);
   }
 }
 
 export function wrapIdentifier(value: string): string {
   if (value === '*') return value;
-  const matched = value.match(/(.*?)(\[[0-9]\])/); // eslint-disable-line no-useless-escape
+  const matched = /(.*?)(\[[0-9]\])/.exec(value);
   if (matched) return wrapIdentifier(matched[1]) + matched[2];
   return `"${value.replace(/"/g, '""')}"`;
 }

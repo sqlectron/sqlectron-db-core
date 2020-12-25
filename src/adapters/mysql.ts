@@ -6,12 +6,26 @@ import { createCancelablePromise } from '../utils';
 import { AbstractAdapter } from './abstract_adapter';
 
 import type { Result } from 'sql-query-identifier';
-import type { QueryArgs, QueryRowResult } from './abstract_adapter';
+import type {
+  QueryArgs,
+  QueryRowResult,
+  QueryReturn,
+  ListTableResult,
+  ListViewResult,
+  ListRoutineResult,
+  ListTableColumnsResult,
+  TableKeysResult,
+ } from './abstract_adapter';
 import type { Database } from '../database';
 import type { DatabaseFilter } from '../filters';
 import type { Server } from '../server';
 
 const logger = createLogger('db:clients:mysql');
+
+const mysqlErrors = {
+  EMPTY_QUERY: 'ER_EMPTY_QUERY',
+  CONNECTION_LOST: 'PROTOCOL_CONNECTION_LOST',
+};
 
 declare module "mysql2" {
   interface PoolConnection {
@@ -25,10 +39,20 @@ interface QueryResult {
   fields: mysql.FieldPacket[] | mysql.FieldPacket[][];
 }
 
-const mysqlErrors = {
-  EMPTY_QUERY: 'ER_EMPTY_QUERY',
-  CONNECTION_LOST: 'PROTOCOL_CONNECTION_LOST',
-};
+interface Config {
+  host?: string;
+  port?: number;
+  user?: string;
+  password?: string;
+  database?: string;
+  multipleStatements: true;
+  dateStrings: true;
+  supportBigNumbers: true;
+  bigNumberStrings: true;
+  ssl?: {
+    rejectUnauthorized: false;
+  }
+}
 
 export default class MysqlAdapter extends AbstractAdapter {
   conn: {
@@ -46,21 +70,8 @@ export default class MysqlAdapter extends AbstractAdapter {
     };
   }
 
-  configDatabase() {
-    const config: {
-      host?: string;
-      port?: number;
-      user?: string;
-      password?: string;
-      database?: string;
-      multipleStatements: true;
-      dateStrings: true;
-      supportBigNumbers: true;
-      bigNumberStrings: true;
-      ssl?: {
-        rejectUnauthorized: false;
-      }
-    } = {
+  configDatabase(): Config {
+    const config: Config = {
       host: this.server.config.host,
       port: this.server.config.port,
       user: this.server.config.user,
@@ -89,21 +100,21 @@ export default class MysqlAdapter extends AbstractAdapter {
     return config;
   }
 
-  async connect() {
+  async connect(): Promise<void> {
     logger().debug('connecting');
 
     const versionInfo = <mysql.RowDataPacket[]>(await this.driverExecuteQuery({
       query: "SHOW VARIABLES WHERE variable_name='version' OR variable_name='version_comment';",
     })).data;
 
-    let version;
-    let versionComment;
+    let version = '';
+    let versionComment = '';
     for (let i = 0; i < versionInfo.length; i++) {
       const item = versionInfo[i];
       if (item.Variable_name === 'version') {
-        version = item.Value;
+        version = item.Value as string;
       } else if (item.Variable_name === 'version_comment') {
-        versionComment = item.Value;
+        versionComment = item.Value as string;
       }
     }
 
@@ -139,7 +150,7 @@ export default class MysqlAdapter extends AbstractAdapter {
     });
   }
 
-  query(queryText: string) {
+  query(queryText: string): QueryReturn {
     let pid: number | null = null;
     let canceling = false;
     const cancelable = createCancelablePromise();
@@ -151,7 +162,7 @@ export default class MysqlAdapter extends AbstractAdapter {
             query: 'SELECT connection_id() AS pid',
           }, connection);
 
-          pid = (<mysql.RowDataPacket[]>pidResult.data)[0].pid;
+          pid = (<mysql.RowDataPacket[]>pidResult.data)[0].pid as number;
 
           try {
             const data = await Promise.race([
@@ -163,9 +174,9 @@ export default class MysqlAdapter extends AbstractAdapter {
 
             return <QueryRowResult[]>data;
           } catch (err) {
-            if (canceling && err.code === mysqlErrors.CONNECTION_LOST) {
+            if (canceling && (err as {code: string}).code === mysqlErrors.CONNECTION_LOST) {
               canceling = false;
-              err.sqlectronError = 'CANCELED_BY_USER';
+              (err as {sqlectronError: string}).sqlectronError = 'CANCELED_BY_USER';
             }
 
             throw err;
@@ -221,7 +232,7 @@ export default class MysqlAdapter extends AbstractAdapter {
     });
   }
 
-  async listTables() {
+  async listTables(): Promise<ListTableResult[]> {
     const sql = `
       SELECT table_name as name
       FROM information_schema.tables
@@ -232,10 +243,10 @@ export default class MysqlAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
-    return <{name: string}[]>data;
+    return data as ListTableResult[];
   }
 
-  async listViews() {
+  async listViews(): Promise<ListViewResult[]> {
     const sql = `
       SELECT table_name as name
       FROM information_schema.views
@@ -245,10 +256,10 @@ export default class MysqlAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
-    return <{name: string}[]>data;
+    return data as ListViewResult[];
   }
 
-  async listRoutines() {
+  async listRoutines(): Promise<ListRoutineResult[]> {
     const sql = `
       SELECT routine_name as 'routine_name', routine_type as 'routine_type'
       FROM information_schema.routines
@@ -259,12 +270,12 @@ export default class MysqlAdapter extends AbstractAdapter {
     const { data } = await this.driverExecuteQuery({ query: sql });
 
     return (<mysql.RowDataPacket[]>data).map((row) => ({
-      routineName: row.routine_name,
-      routineType: row.routine_type,
+      routineName: row.routine_name as string,
+      routineType: row.routine_type as string,
     }));
   }
 
-  async listTableColumns(table: string) {
+  async listTableColumns(table: string): Promise<ListTableColumnsResult[]> {
     const sql = `
       SELECT column_name AS 'column_name', data_type AS 'data_type'
       FROM information_schema.columns
@@ -280,12 +291,12 @@ export default class MysqlAdapter extends AbstractAdapter {
     const { data } = await this.driverExecuteQuery({ query: sql, params });
 
     return (<mysql.RowDataPacket[]>data).map((row) => ({
-      columnName: row.column_name,
-      dataType: row.data_type,
+      columnName: row.column_name as string,
+      dataType: row.data_type as string,
     }));
   }
 
-  async listTableTriggers(table: string) {
+  async listTableTriggers(table: string): Promise<string[]> {
     const sql = `
       SELECT trigger_name as 'trigger_name'
       FROM information_schema.triggers
@@ -299,10 +310,10 @@ export default class MysqlAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteQuery({ query: sql, params });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row.trigger_name);
+    return (<mysql.RowDataPacket[]>data).map((row) => row.trigger_name as string);
   }
 
-  async listTableIndexes(table: string) {
+  async listTableIndexes(table: string): Promise<string[]> {
     const sql = 'SHOW INDEX FROM ?? FROM ??';
 
     const params = [
@@ -312,20 +323,20 @@ export default class MysqlAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteQuery({ query: sql, params });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row.Key_name);
+    return (<mysql.RowDataPacket[]>data).map((row) => row.Key_name as string);
   }
 
-  async listDatabases(filter?: DatabaseFilter) {
+  async listDatabases(filter?: DatabaseFilter): Promise<string[]> {
     const sql = 'show databases';
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
     return (<mysql.RowDataPacket[]>data)
       .filter((item) => filterDatabase(item, filter, 'Database'))
-      .map((row) => row.Database);
+      .map((row) => row.Database as string);
   }
 
-  async getTableReferences(table: string) {
+  async getTableReferences(table: string): Promise<string[]> {
     const sql = `
       SELECT referenced_table_name as 'referenced_table_name'
       FROM information_schema.key_column_usage
@@ -340,10 +351,10 @@ export default class MysqlAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteQuery({ query: sql, params });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row.referenced_table_name);
+    return (<mysql.RowDataPacket[]>data).map((row) => row.referenced_table_name as string);
   }
 
-  async getTableKeys(table: string) {
+  async getTableKeys(table: string): Promise<TableKeysResult[]> {
     const sql = `
       SELECT
         constraint_name as 'constraint_name',
@@ -365,46 +376,46 @@ export default class MysqlAdapter extends AbstractAdapter {
     const { data } = await this.driverExecuteQuery({ query: sql, params });
 
     return (<mysql.RowDataPacket[]>data).map((row) => ({
-      constraintName: `${row.constraint_name} KEY`,
-      columnName: row.column_name,
-      referencedTable: row.referenced_table_name,
-      keyType: `${row.key_type} KEY`,
+      constraintName: `${row.constraint_name as string} KEY`,
+      columnName: row.column_name as string,
+      referencedTable: row.referenced_table_name as string,
+      keyType: `${row.key_type as string} KEY`,
     }));
   }
 
-  async getTableCreateScript(table: string) {
+  async getTableCreateScript(table: string): Promise<string[]> {
     const sql = `SHOW CREATE TABLE ${table}`;
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row['Create Table']);
+    return (<mysql.RowDataPacket[]>data).map((row) => row['Create Table'] as string);
   }
 
-  async getViewCreateScript(view: string) {
+  async getViewCreateScript(view: string): Promise<string[]> {
     const sql = `SHOW CREATE VIEW ${view}`;
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row['Create View']);
+    return (<mysql.RowDataPacket[]>data).map((row) => row['Create View'] as string);
   }
 
-  async getRoutineCreateScript(routine: string, type: string) {
+  async getRoutineCreateScript(routine: string, type: string): Promise<string[]> {
     const sql = `SHOW CREATE ${type.toUpperCase()} ${routine}`;
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row[`Create ${type}`]);
+    return (<mysql.RowDataPacket[]>data).map((row) => row[`Create ${type}`] as string);
   }
 
-  async getSchema(connection?: mysql.PoolConnection) {
+  async getSchema(connection?: mysql.PoolConnection): Promise<string> {
     const sql = 'SELECT database() AS \'schema\'';
 
     const result = await this.driverExecuteQuery({ query: sql }, connection);
 
-    return (<mysql.RowDataPacket[]>result.data)[0].schema;
+    return (<mysql.RowDataPacket[]>result.data)[0].schema as string;
   }
 
-  async truncateAllTables() {
+  async truncateAllTables(): Promise<void> {
     await this.runWithConnection(async (connection) => {
       const schema = await this.getSchema(connection);
 
@@ -545,7 +556,7 @@ function filterDatabase(
 ) {
   if (!database) { return true; }
 
-  const value = item[databaseField];
+  const value = item[databaseField] as string;
   if (typeof database === 'string') {
     return database === value;
   }

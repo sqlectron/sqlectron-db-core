@@ -726,24 +726,17 @@ describe('db', () => {
               const executing = query.execute();
 
               // wait a 5 secs before cancel
-              setTimeout(async () => {
-                let error;
-                try {
-                  await Promise.all([
-                    executing,
-                    query.cancel(),
-                  ]);
-                } catch (err) {
-                  error = err;
-                }
-
-                try {
-                  expect(error).to.exist;
-                  expect(error.sqlectronError).to.eql('CANCELED_BY_USER');
+              setTimeout(() => {
+                Promise.all([
+                  executing,
+                  query.cancel(),
+                ]).then(() => {
+                  done(false);
+                }).catch((err) => {
+                  expect(err).to.exist;
+                  expect((err as {sqlectronError: string}).sqlectronError).to.eql('CANCELED_BY_USER');
                   done();
-                } catch (err) {
-                  done(err);
-                }
+                });
               }, 5000);
             });
           });
@@ -751,7 +744,7 @@ describe('db', () => {
           it('should query single result from function', async () => {
             const query = dbConn.query('SELECT CURRENT_TIMESTAMP');
             const result = await query.execute();
-            expect(result[0].rows[0]).to.be.not.null;
+            expect((result[0].rows as unknown[])[0]).to.be.not.null;
             expect(result[0].rowCount).to.eql(1);
             let expected;
             if (dbAdapter === 'sqlserver') {
@@ -789,7 +782,7 @@ describe('db', () => {
                 expect(results).to.have.length(0);
               } catch (err) {
                 if (dbAdapter === 'cassandra') {
-                  expect(err.message).to.eql('line 0:-1 no viable alternative at input \'<EOF>\'');
+                  expect((err as {message: string}).message).to.eql('line 0:-1 no viable alternative at input \'<EOF>\'');
                 } else {
                   throw err;
                 }
@@ -809,9 +802,9 @@ describe('db', () => {
               } catch (err) {
                 if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '2') === 0) {
-                    expect(err.message).to.eql('line 0:-1 no viable alternative at input \'<EOF>\'');
+                    expect((err as {message: string}).message).to.eql('line 0:-1 no viable alternative at input \'<EOF>\'');
                   } else {
-                    expect(err.message).to.eql('line 1:13 mismatched character \'<EOF>\' expecting set null');
+                    expect((err as {message: string}).message).to.eql('line 1:13 mismatched character \'<EOF>\' expecting set null');
                   }
                 } else {
                   throw err;
@@ -922,9 +915,9 @@ describe('db', () => {
               } catch (err) {
                 if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '3.10') >= 0) {
-                    expect(err.message).to.match(/mismatched input 'select' expecting EOF/);
+                    expect((err as {message: string}).message).to.match(/mismatched input 'select' expecting EOF/);
                   } else {
-                    expect(err.message).to.match(/missing EOF at 'select'/);
+                    expect((err as {message: string}).message).to.match(/missing EOF at 'select'/);
                   }
                 } else {
                   throw err;
@@ -1002,9 +995,9 @@ describe('db', () => {
               } catch (err) {
                 if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '3.10') >= 0) {
-                    expect(err.message).to.match(/mismatched input 'insert' expecting EOF/);
+                    expect((err as {message: string}).message).to.match(/mismatched input 'insert' expecting EOF/);
                   } else {
-                    expect(err.message).to.match(/missing EOF at 'insert'/);
+                    expect((err as {message: string}).message).to.match(/missing EOF at 'insert'/);
                   }
                 } else {
                   throw err;
@@ -1078,9 +1071,9 @@ describe('db', () => {
               } catch (err) {
                 if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '3.10') >= 0) {
-                    expect(err.message).to.match(/mismatched input 'delete' expecting EOF/);
+                    expect((err as {message: string}).message).to.match(/mismatched input 'delete' expecting EOF/);
                   } else {
-                    expect(err.message).to.match(/missing EOF at 'delete'/);
+                    expect((err as {message: string}).message).to.match(/missing EOF at 'delete'/);
                   }
                 } else {
                   throw err;
@@ -1154,9 +1147,9 @@ describe('db', () => {
               } catch (err) {
                 if (dbAdapter === 'cassandra') {
                   if (versionCompare(dbConn.getVersion().version, '3.10') >= 0) {
-                    expect(err.message).to.match(/mismatched input 'update' expecting EOF/);
+                    expect((err as {message: string}).message).to.match(/mismatched input 'update' expecting EOF/);
                   } else {
-                    expect(err.message).to.match(/missing EOF at 'update'/);
+                    expect((err as {message: string}).message).to.match(/missing EOF at 'update'/);
                   }
                 } else {
                   throw err;

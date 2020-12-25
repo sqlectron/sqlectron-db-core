@@ -12,8 +12,13 @@ export interface SchemaFilter {
   }
 }
 
-export function buildSchemaFilter({ schema }: SchemaFilter = {}, schemaField: string = 'schema_name') {
-  if (!schema) { return null; }
+export function buildSchemaFilter(
+  { schema }: SchemaFilter = {},
+  schemaField = 'schema_name',
+): string | null {
+  if (!schema) {
+    return null;
+  }
 
   if (typeof schema === 'string') {
     return `${schemaField} = '${schema}'`;
@@ -33,8 +38,13 @@ export function buildSchemaFilter({ schema }: SchemaFilter = {}, schemaField: st
   return where.join(' AND ');
 }
 
-export function buildDatabaseFilter({ database }: DatabaseFilter = {}, databaseField: string) {
-  if (!database) { return null; }
+export function buildDatabaseFilter(
+  { database }: DatabaseFilter = {},
+  databaseField: string,
+): string | null {
+  if (!database) {
+    return null;
+  }
 
   if (typeof database === 'string') {
     return `${databaseField} = '${database}'`;

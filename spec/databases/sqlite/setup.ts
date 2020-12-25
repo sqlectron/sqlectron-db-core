@@ -4,7 +4,7 @@ import sqlite3 from 'sqlite3';
 
 sqlite3.verbose();
 
-export default function run(config: {database: string}) {
+export default function run(config: {database: string}): void {
   before(async () => {
     const db = new sqlite3.Database(config.database);
 

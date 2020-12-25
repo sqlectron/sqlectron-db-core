@@ -27,7 +27,7 @@ export interface ServerConfig {
     ca?: string;
     cert?: string;
   } | false;
-};
+}
 
 export class Server {
   databases: {[key: string]: Database} = {};
@@ -41,14 +41,14 @@ export class Server {
     }
   }
 
-  db(dbName: string) {
+  db(dbName: string): Database {
     return this.databases[dbName];
   }
 
   /**
    * Disconnect all connected databases
    */
-  end() {
+  end(): void {
     for (const dbName in this.databases) {
       this.databases[dbName].disconnect();
     }
@@ -60,7 +60,7 @@ export class Server {
     }
   }
 
-  createConnection(dbName?: string) {
+  createConnection(dbName?: string): Database {
     const dbKey = dbName || 'undefined';
 
     if (this.databases[dbKey]) {
@@ -72,7 +72,7 @@ export class Server {
     return this.databases[dbKey];
   }
 
-  removeDatabase(dbName?: string) {
+  removeDatabase(dbName?: string): void {
     const dbKey = dbName || 'undefined';
     if (this.databases[dbKey]) {
       delete this.databases[dbKey];
@@ -80,7 +80,7 @@ export class Server {
   }
 }
 
-export function createServer(serverConfig: ServerConfig) {
+export function createServer(serverConfig: ServerConfig): Server {
   if (!serverConfig) {
     throw new Error('Missing server configuration');
   }

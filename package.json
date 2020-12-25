@@ -8,7 +8,6 @@
   "scripts": {
     "compile": "tsc",
     "watch": "tsc -w",
-    "prepublishOnly": "npm run compile",
     "lint": "eslint src/ spec/",
     "test:mysql": "DB_CLIENTS=mysql npm run test",
     "test:mariadb": "DB_CLIENTS=mariadb npm run test",
@@ -19,7 +18,9 @@
     "test:cassandra": "DB_CLIENTS=cassandra npm run test",
     "test": "mocha --exit --timeout 40000 --require ts-node/register --reporter spec \"./spec/**/*.spec.ts\"",
     "test:coverage": "nyc --reporter=text mocha --exit --timeout 4000 --require ts-node/register --reporter spec \"./spec/**/*.spec.ts\"",
-    "watch-test": "mocha --require ts-node/register --watch --reporter spec \"./spec/**/*.spec.ts\""
+    "watch-test": "mocha --require ts-node/register --watch --reporter spec \"./spec/**/*.spec.ts\"",
+    "prepublishOnly": "echo \"Do not run publish directly, run publisher\" && exit 1",
+    "publisher": "publisher"
   },
   "keywords": [
     "sqlectron",
@@ -46,6 +47,7 @@
     "uuid": "^3.0.0"
   },
   "devDependencies": {
+    "@masterodin/publisher": "^0.7.0",
     "@types/cassandra-driver": "^3.6.0",
     "@types/chai": "^4.2.14",
     "@types/chai-as-promised": "^7.1.3",
@@ -56,12 +58,12 @@
     "@types/sql-query-identifier": "^1.1.0",
     "@types/sqlite3": "^3.1.6",
     "@types/ssh2": "^0.5.46",
+    "@typescript-eslint/eslint-plugin": "^4.11.0",
+    "@typescript-eslint/parser": "^4.11.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "connection-string": "^3.4.2",
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^11.3.2",
-    "eslint-plugin-import": "^2.20.2",
+    "eslint": "^7.16.0",
     "mocha": "^6.2.3",
     "nyc": "^14.1.1",
     "portfinder": "^1.0.28",

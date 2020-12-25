@@ -9,6 +9,14 @@ import type { ConnectionPool, config, Request, IResult, IRecordSet } from 'mssql
 import type { Database } from '../database';
 import type { DatabaseFilter, SchemaFilter } from '../filters';
 import type { Server } from '../server';
+import type {
+  ListTableResult,
+  ListViewResult,
+  ListRoutineResult,
+  ListTableColumnsResult,
+  TableKeysResult,
+  QueryReturn,
+} from './abstract_adapter';
 
 const logger = createLogger('db:clients:sqlserver');
 
@@ -17,19 +25,24 @@ const mmsqlErrors = {
 };
 
 declare module "mssql" {
-  function connect(config: config): ConnectionPool;
+  function connect(config: config): Promise<ConnectionPool>;
 }
 
-interface QueryResult<T = any> {
+interface QueryResult<T = unknown> {
   request: Request;
-  result: IResult<any>;
+  result: IResult<unknown>;
   data: IRecordSet<T>[];
 }
 
-interface SingleQueryResult<T = any> {
+interface SingleQueryResult<T = unknown> {
   request: Request;
-  result: IResult<any>;
+  result: IResult<unknown>;
   data: IRecordSet<T>;
+}
+
+interface ListTableQuery {
+  table_schema: string;
+  table_name: string;
 }
 
 export default class SqlServerAdapter extends AbstractAdapter {
@@ -70,38 +83,38 @@ export default class SqlServerAdapter extends AbstractAdapter {
     return <config>config;
   }
 
-  async connect() {
+  async connect(): Promise<void> {
     logger().debug('connecting');
 
-    const version = (await this.driverExecuteSingleQuery({
+    const version = (await this.driverExecuteSingleQuery<{version: string}>({
       query: "SELECT @@version as 'version'"
     })).data[0].version;
 
     this.version = {
       name: 'SQL Server',
-      version: version.match(/^Microsoft SQL Server ([0-9]{4})/)[1],
+      version: (/^Microsoft SQL Server ([0-9]{4})/.exec(version) as RegExpExecArray)[1],
       string: version,
     };
 
     logger().debug('connected');
   }
 
-  async disconnect() {
+  async disconnect(): Promise<void> {
     const connection = await connect(this.conn.dbConfig);
-    connection.close();
+    return connection.close();
   }
 
-  async getSchema(connection?: ConnectionPool) {
+  async getSchema(connection?: ConnectionPool): Promise<string> {
     const sql = 'SELECT schema_name() AS \'schema\'';
 
-    const { data } = await this.driverExecuteSingleQuery(
+    const { data } = await this.driverExecuteSingleQuery<{schema: string}>(
       { query: sql },
       connection
     );
     return data[0].schema;
   }
 
-  async listDatabases(filter?: DatabaseFilter) {
+  async listDatabases(filter?: DatabaseFilter): Promise<string[]> {
     const databaseFilter = buildDatabaseFilter(filter, 'name');
     const sql = `
       SELECT name
@@ -110,12 +123,12 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY name
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{name: string}>({ query: sql });
 
     return data.map((row) => row.name);
   }
 
-  async listSchemas(filter: SchemaFilter) {
+  async listSchemas(filter: SchemaFilter): Promise<string[]> {
     const schemaFilter = buildSchemaFilter(filter);
     const sql = `
       SELECT schema_name
@@ -124,12 +137,12 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY schema_name
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{schema_name: string}>({ query: sql });
 
     return data.map((row) => row.schema_name);
   }
 
-  async listTables(filter: SchemaFilter) {
+  async listTables(filter: SchemaFilter): Promise<ListTableResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'table_schema');
     const sql = `
       SELECT
@@ -141,7 +154,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY table_schema, table_name
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<ListTableQuery>({ query: sql });
 
     return data.map((item) => ({
       schema: item.table_schema,
@@ -149,7 +162,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     }));
   }
 
-  async listViews(filter: SchemaFilter) {
+  async listViews(filter: SchemaFilter): Promise<ListViewResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'table_schema');
     const sql = `
       SELECT
@@ -160,7 +173,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY table_schema, table_name
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<ListTableQuery>({ query: sql });
 
     return data.map((item) => ({
       schema: item.table_schema,
@@ -168,7 +181,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     }));
   }
 
-  async listRoutines(filter: SchemaFilter) {
+  async listRoutines(filter: SchemaFilter): Promise<ListRoutineResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'routine_schema');
     const sql = `
       SELECT
@@ -181,7 +194,11 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY routine_schema, routine_name
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{
+      routine_schema: string;
+      routine_name: string;
+      routine_type: string;
+    }>({ query: sql });
 
     return data.map((row) => ({
       schema: row.routine_schema,
@@ -190,7 +207,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     }));
   }
 
-  async listTableColumns(table: string) {
+  async listTableColumns(table: string): Promise<ListTableColumnsResult[]> {
     const sql = `
       SELECT column_name, data_type
       FROM INFORMATION_SCHEMA.COLUMNS
@@ -198,7 +215,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY ordinal_position
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{column_name: string; data_type: string}>({ query: sql });
 
     return data.map((row) => ({
       columnName: row.column_name,
@@ -206,39 +223,39 @@ export default class SqlServerAdapter extends AbstractAdapter {
     }));
   }
 
-  async listTableTriggers(table: string) {
+  async listTableTriggers(table: string): Promise<string[]> {
     // SQL Server does not have information_schema for triggers, so other way around
     // is using sp_helptrigger stored procedure to fetch triggers related to table
     const sql = `EXEC sp_helptrigger ${wrapIdentifier(table)}`;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{trigger_name: string}>({ query: sql });
 
     return data.map((row) => row.trigger_name);
   }
 
-  async listTableIndexes(table: string) {
+  async listTableIndexes(table: string): Promise<string[]> {
     // SQL Server does not have information_schema for indexes, so other way around
     // is using sp_helpindex stored procedure to fetch indexes related to table
     const sql = `EXEC sp_helpindex ${wrapIdentifier(table)}`;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{index_name: string}>({ query: sql });
 
     return data.map((row) => row.index_name);
   }
 
-  async getTableReferences(table: string) {
+  async getTableReferences(table: string): Promise<string[]> {
     const sql = `
       SELECT OBJECT_NAME(referenced_object_id) referenced_table_name
       FROM sys.foreign_keys
       WHERE parent_object_id = OBJECT_ID('${table}')
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{referenced_table_name: string}>({ query: sql });
 
     return data.map((row) => row.referenced_table_name);
   }
 
-  async getTableKeys(table: string) {
+  async getTableKeys(table: string): Promise<TableKeysResult[]> {
     const sql = `
       SELECT
         tc.constraint_name,
@@ -256,7 +273,12 @@ export default class SqlServerAdapter extends AbstractAdapter {
       AND tc.constraint_type IN ('PRIMARY KEY', 'FOREIGN KEY')
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{
+      constraint_name: string;
+      column_name: string;
+      referenced_table_name: string | null;
+      constraint_type: string;
+    }>({ query: sql });
 
     return data.map((row) => ({
       constraintName: row.constraint_name,
@@ -266,11 +288,11 @@ export default class SqlServerAdapter extends AbstractAdapter {
     }));
   }
 
-  getQuerySelectTop(table: string, limit: number) {
+  getQuerySelectTop(table: string, limit: number): string {
     return `SELECT TOP ${limit} * FROM ${this.wrapIdentifier(table)}`;
   }
 
-  async getTableCreateScript(table: string) {
+  async getTableCreateScript(table: string): Promise<string[]> {
     // Reference http://stackoverflow.com/a/317864
     const sql = `
       SELECT  ('CREATE TABLE ' + so.name + ' (' +
@@ -336,32 +358,32 @@ export default class SqlServerAdapter extends AbstractAdapter {
       AND so.name = '${table}'
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{createtable: string}>({ query: sql });
 
     return data.map((row) => row.createtable);
   }
 
-  async getViewCreateScript(view: string) {
+  async getViewCreateScript(view: string): Promise<string[]> {
     const sql = `SELECT OBJECT_DEFINITION (OBJECT_ID('${view}')) AS ViewDefinition;`;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ViewDefinition: string}>({ query: sql });
 
     return data.map((row) => row.ViewDefinition);
   }
 
-  async getRoutineCreateScript(routine: string) {
+  async getRoutineCreateScript(routine: string): Promise<string[]> {
     const sql = `
       SELECT routine_definition
       FROM INFORMATION_SCHEMA.ROUTINES
       WHERE routine_name = '${routine}'
     `;
 
-    const { data } = await this.driverExecuteSingleQuery({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{routine_definition: string}>({ query: sql });
 
     return data.map((row) => row.routine_definition);
   }
 
-  async truncateAllTables() {
+  async truncateAllTables(): Promise<void> {
     await this.runWithConnection(async (connection: ConnectionPool) => {
       const schema = await this.getSchema(connection);
 
@@ -372,7 +394,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
         AND table_type NOT LIKE '%VIEW%'
       `;
 
-      const { data } = await this.driverExecuteSingleQuery(
+      const { data } = await this.driverExecuteSingleQuery<{table_name: string}>(
         { query: sql },
         connection
       );
@@ -395,7 +417,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     });
   }
 
-  query(queryText: string) {
+  query(queryText: string): QueryReturn {
     let queryRequest: null | Request = null;
 
     return {
@@ -419,16 +441,16 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
             // Executing only non select queries will not return results.
             // So we "fake" there is at least one result.
-            const results = <IRecordSet<any>[]>(!data.length && affectedRows ? [[]] : data);
+            const results = <IRecordSet<unknown>[]>(!data.length && affectedRows ? [[]] : data);
 
             return results.map((_, idx) => parseRowQueryResult(
               results[idx],
               affectedRows,
               commands[idx],
             ));
-          } catch (err) {
-            if (err.code === mmsqlErrors.CANCELED) {
-              err.sqlectronError = 'CANCELED_BY_USER';
+          } catch (err: unknown) {
+            if ((err as {code: string}).code === mmsqlErrors.CANCELED) {
+              (err as {sqlectronError: string}).sqlectronError = 'CANCELED_BY_USER';
             }
 
             throw err;
@@ -463,14 +485,14 @@ export default class SqlServerAdapter extends AbstractAdapter {
     const rowsAffected = result.rowsAffected.reduce((a, b) => a + b, 0);
     const results = !data.length && rowsAffected ? [[]] : data;
 
-    return (<Array<IRecordSet<any> | []>>results).map(
-      (value: IRecordSet<any> | [], idx: number) => {
+    return (<Array<IRecordSet<unknown> | []>>results).map(
+      (value: IRecordSet<unknown> | [], idx: number) => {
         return parseRowQueryResult(value, rowsAffected, commands[idx]);
       }
     );
   }
 
-  async driverExecuteSingleQuery<T = any>(
+  async driverExecuteSingleQuery<T = unknown>(
     queryArgs: QueryArgs,
     connection?: ConnectionPool,
   ): Promise<SingleQueryResult<T>> {
@@ -478,11 +500,11 @@ export default class SqlServerAdapter extends AbstractAdapter {
     return {
       request: result.request,
       result: result.result,
-      data: result.data[0],
+      data: result.data[0] as IRecordSet<T>,
     };
   }
 
-  async driverExecuteQuery<T = any>(queryArgs: QueryArgs, connection?: ConnectionPool) {
+  async driverExecuteQuery<T = unknown>(queryArgs: QueryArgs, connection?: ConnectionPool): Promise<QueryResult<T>> {
     const runQuery = async (connection: ConnectionPool): Promise<QueryResult<T>> => {
       const request = connection.request();
       if (queryArgs.multiple) {
@@ -494,7 +516,9 @@ export default class SqlServerAdapter extends AbstractAdapter {
       return {
         request,
         result,
-        data: request.multiple ? result.recordsets : [result.recordset],
+        data: request.multiple
+          ? result.recordsets as IRecordSet<T>[]
+          : [result.recordset as IRecordSet<T>],
       };
     };
 
@@ -519,6 +543,7 @@ export function wrapIdentifier(value: string): string {
 }
 
 function parseRowQueryResult(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: IRecordSet<any> | [],
   affectedRows: number | undefined,
   command: string
