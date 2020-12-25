@@ -52,7 +52,7 @@ export default class MysqlAdapter extends AbstractAdapter {
       port?: number;
       user?: string;
       password?: string;
-      database: string;
+      database?: string;
       multipleStatements: true;
       dateStrings: true;
       supportBigNumbers: true;

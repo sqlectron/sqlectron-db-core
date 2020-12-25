@@ -14,11 +14,11 @@ let limitSelect: number | null = null;
 
 export class Database {
   server: Server;
-  database: string;
+  database: string | undefined;
   connecting: boolean = false;
   connection: null | AbstractAdapter = null;
 
-  constructor(server: Server, database: string) {
+  constructor(server: Server, database?: string) {
     this.server = server;
     this.database = database;
   }

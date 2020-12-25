@@ -4,6 +4,7 @@ import { identify } from 'sql-query-identifier';
 import { buildDatabaseFilter, buildSchemaFilter } from '../filters';
 import createLogger from '../logger';
 import { createCancelablePromise, versionCompare } from '../utils';
+import { Adapter, ADAPTERS } from './';
 import { AbstractAdapter, QueryArgs, QueryRowResult } from './abstract_adapter';
 
 import type { Database } from '../database';
@@ -61,7 +62,9 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       port: this.server.config.port,
       user: this.server.config.user,
       password: this.server.config.password,
-      database: this.database.database,
+      database: this.database.database || <string>(<Adapter>ADAPTERS.find(
+        (adapter) => adapter.key === 'postgresql'
+      )).defaultDatabase,
       max: 5, // max idle connections per time (30 secs)
     };
 

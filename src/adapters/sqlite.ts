@@ -3,6 +3,7 @@ import type { RunResult } from 'sqlite3';
 import { identify, Result } from 'sql-query-identifier';
 
 import createLogger from '../logger';
+import { Adapter, ADAPTERS } from './';
 import { AbstractAdapter } from './abstract_adapter';
 import type { QueryArgs, QueryRowResult } from './abstract_adapter';
 import type { Server } from '../server';
@@ -36,7 +37,9 @@ export default class SqliteAdapter extends AbstractAdapter {
 
   configDatabase() {
     return {
-      database: this.database.database,
+      database: this.database.database || <string>(<Adapter>ADAPTERS.find(
+        (adapter) => adapter.key === 'sqlite'
+      )).defaultDatabase,
     };
   }
 

@@ -37,7 +37,7 @@ export default class CassandraAdapter extends AbstractAdapter {
       protocolOptions: {
         port?: number;
       };
-      keyspace: string;
+      keyspace?: string;
       authProvider?: cassandra.auth.PlainTextAuthProvider;
     } = {
       contactPoints: [<string>this.server.config.host],
@@ -177,6 +177,9 @@ export default class CassandraAdapter extends AbstractAdapter {
     keyType: string;
   }[]> {
     return new Promise((resolve, reject) => {
+      if (this.database.database === undefined) {
+        return [];
+      }
       this.client.metadata
       .getTable(this.database.database, table, (err: Error, tableInfo: {partitionKeys: {name: string}[]}) => {
         if (err) {
@@ -202,6 +205,9 @@ export default class CassandraAdapter extends AbstractAdapter {
     const result = await this.listTables();
     const tables = result.map((table) => table.name);
     const promises = tables.map((t) => {
+      if (this.database.database === undefined) {
+        return;
+      }
       const truncateSQL = `
         TRUNCATE TABLE ${this.wrapIdentifier(this.database.database)}.${this.wrapIdentifier(t)};
       `;

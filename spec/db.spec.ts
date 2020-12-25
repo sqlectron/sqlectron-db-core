@@ -62,7 +62,7 @@ describe('db', () => {
           };
 
           const serverSession = db.createServer(serverInfo);
-          const dbConn = serverSession.createConnection(<string>serverInfo.database);
+          const dbConn = serverSession.createConnection(serverInfo.database);
 
           return expect(dbConn.connect()).to.not.be.rejected;
         });
@@ -75,10 +75,8 @@ describe('db', () => {
             adapter: dbAdapter,
           };
 
-          console.log(serverInfo.database);
-
           const serverSession = db.createServer(serverInfo);
-          const dbConn = serverSession.createConnection(<string>serverInfo.database);
+          const dbConn = serverSession.createConnection(serverInfo.database);
 
           return expect(dbConn.connect()).to.not.be.rejected;
         });
@@ -95,7 +93,7 @@ describe('db', () => {
         let dbConn: Database;
         beforeEach(() => {
           serverSession = db.createServer(serverInfo);
-          dbConn = serverSession.createConnection(<string>serverInfo.database);
+          dbConn = serverSession.createConnection(serverInfo.database);
           return dbConn.connect();
         });
 

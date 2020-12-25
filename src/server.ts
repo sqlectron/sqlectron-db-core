@@ -60,19 +60,22 @@ export class Server {
     }
   }
 
-  createConnection(dbName: string) {
-    if (this.databases[dbName]) {
-      return this.databases[dbName];
+  createConnection(dbName?: string) {
+    const dbKey = dbName || 'undefined';
+
+    if (this.databases[dbKey]) {
+      return this.databases[dbKey];
     }
 
-    this.databases[dbName] = new Database(this, dbName);
+    this.databases[dbKey] = new Database(this, dbName);
 
-    return this.databases[dbName];
+    return this.databases[dbKey];
   }
 
-  removeDatabase(dbName: string) {
-    if (this.databases[dbName]) {
-      delete this.databases[dbName];
+  removeDatabase(dbName?: string) {
+    const dbKey = dbName || 'undefined';
+    if (this.databases[dbKey]) {
+      delete this.databases[dbKey];
     }
   }
 }
