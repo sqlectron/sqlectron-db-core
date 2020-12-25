@@ -3,7 +3,7 @@ import path from 'path';
 import cassandraDriver from 'cassandra-driver';
 
 
-export default function run(config) {
+export default function run(config: {host: string}): void {
   before(async () => {
     const client = new cassandraDriver.Client({
       contactPoints: [config.host],
@@ -19,7 +19,10 @@ export default function run(config) {
 }
 
 
-function executeQuery(client, query) {
+function executeQuery(
+  client: cassandraDriver.Client,
+  query: string
+): Promise<cassandraDriver.types.ResultSet> {
   return new Promise((resolve, reject) => {
     client.execute(query, (err, data) => {
       if (err) {
