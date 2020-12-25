@@ -82,4 +82,4 @@ jobs:
 
     # - run: DB_ADAPTERS=mysql,mariadb,postgresql,redshift,sqlite,sqlserver,cassandra npm run test:coverage
 
-    - run: DB_ADAPTERS=mysql,mariadb,postgresql,redshift,sqlserver,sqlite npm run test
+    - run: DB_ADAPTERS=cassandra,mysql,mariadb,postgresql,redshift,sqlite,sqlserver npm run test
