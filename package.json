@@ -53,6 +53,7 @@
     "@babel/plugin-transform-destructuring": "^7.9.5",
     "@babel/plugin-transform-modules-commonjs": "^7.9.6",
     "@babel/register": "^7.9.0",
+    "@types/cassandra-driver": "^3.6.0",
     "@types/debug": "^4.1.5",
     "@types/mssql": "^6.0.7",
     "@types/pg": "^7.14.7",

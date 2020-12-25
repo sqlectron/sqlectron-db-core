@@ -17,7 +17,7 @@ export interface QueryArgs {
 export interface QueryRowResult {
   command: string;
   rows: any;
-  fields: {name: string}[];
+  fields: unknown;
   rowCount?: number;
   affectedRows?: number;
 }
@@ -78,10 +78,10 @@ export abstract class AbstractAdapter {
   }
 
   getTableKeys(table: string, schema: string): Promise<{
-    constraintName: string,
     columnName: string,
-    referencedTable: string,
     keyType: string,
+    constraintName: string | null,
+    referencedTable: string | null,
   }[]> {
     return Promise.resolve([]);
   }
