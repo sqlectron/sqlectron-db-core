@@ -1,1 +1,11 @@
 src/
+spec/
+tsconfig*.json
+.github/
+.nyc_output/
+.vscode/
+.editorconfig
+.eslintrc.json
+Dockerfile
+docker-compose.yml
+
