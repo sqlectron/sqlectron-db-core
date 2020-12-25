@@ -80,6 +80,4 @@ jobs:
     - name: Initialize SQLServer Schema
       run: docker exec -i sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P Password12! -i /docker-entrypoint-initdb.d/schema.sql -d "sqlectron"
 
-    # - run: DB_ADAPTERS=mysql,mariadb,postgresql,redshift,sqlite,sqlserver,cassandra npm run test:coverage
-
-    - run: DB_ADAPTERS=cassandra,mysql,mariadb,postgresql,redshift,sqlite,sqlserver npm run test
+    - run: npm run test:coverage

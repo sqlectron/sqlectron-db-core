@@ -1,8 +1,8 @@
 {
   "name": "sqlectron-db-core",
-  "version": "9.0.0",
+  "version": "1.0.0",
   "description": "sqlectron-db-core",
-  "main": "lib/index.js",
+  "main": "dist/index.js",
   "author": "The SQLECTRON Team",
   "license": "MIT",
   "scripts": {
@@ -70,7 +70,11 @@
     "typescript": "^4.1.2"
   },
   "nyc": {
-    "include": "src",
-    "exclude": "**/*.spec.js"
+    "extension": [
+      ".ts",
+      ".tsx"
+    ],
+    "include": "src/**/*.ts",
+    "exclude": "spec/**/*.spec.ts"
   }
 }
