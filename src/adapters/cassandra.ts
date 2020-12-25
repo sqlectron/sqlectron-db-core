@@ -228,7 +228,7 @@ export default class CassandraAdapter extends AbstractAdapter {
   }
 
   wrapIdentifier(value: string): string {
-    return this.wrapIdentifier(value);
+    return wrapIdentifier(value);
   }
 }
 
