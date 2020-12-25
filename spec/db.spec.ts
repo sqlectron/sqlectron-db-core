@@ -3,19 +3,24 @@ import chaiAsPromised from 'chai-as-promised';
 import config from './databases/config';
 import setupSQLite from './databases/sqlite/setup';
 import setupCassandra from './databases/cassandra/setup';
-import * as db from '../dist';
-import { versionCompare } from '../dist/utils';
+import * as db from '../src';
+import { versionCompare } from '../src/utils';
+import type { Adapter } from '../src/adapters';
+import type { Database } from '../src/database';
+import type { Server } from '../src/server';
 
 chai.use(chaiAsPromised);
+
+type adapterType = 'sqlite' | 'postgresql' | 'redshift' | 'mysql' | 'mariadb' | 'sqlserver' | 'cassandra';
 
 /**
  * List of supported DB adapters.
  * The "integration" tests will be executed for all supported DB adapters.
  * And ensure all these adapters has the same API and output results.
  */
-const SUPPORTED_DB_ADAPTERS = db.ADAPTERS.map((adapter) => adapter.key);
+const SUPPORTED_DB_ADAPTERS: adapterType[] = <adapterType[]>db.ADAPTERS.map((adapter) => adapter.key);
 
-const dbSchemas = {
+const dbSchemas: {[key: string]: string} = {
   redshift: 'public',
   postgresql: 'public',
   sqlserver: 'dbo',
@@ -24,7 +29,9 @@ const dbSchemas = {
 /**
  * List of selected databases to be tested in the current task
  */
-const dbsToTest = (process.env.DB_ADAPTERS || '').split(',').filter((adapter) => !!adapter);
+const dbsToTest: adapterType[] = <adapterType[]>(
+  process.env.DB_ADAPTERS || ''
+).split(',').filter((adapter) => !!adapter);
 
 const postgresAdapters = ['postgresql', 'redshift'];
 const mysqlAdapters = ['mysql', 'mariadb'];
@@ -42,7 +49,7 @@ describe('db', () => {
     setupCassandra(config.cassandra);
   }
 
-  dbAdapters.forEach((dbAdapter) => {
+  dbAdapters.forEach((dbAdapter: adapterType) => {
     const dbSchema = dbSchemas[dbAdapter];
 
     describe(dbAdapter, () => {
@@ -55,7 +62,7 @@ describe('db', () => {
           };
 
           const serverSession = db.createServer(serverInfo);
-          const dbConn = serverSession.createConnection(serverInfo.database);
+          const dbConn = serverSession.createConnection(<string>serverInfo.database);
 
           return expect(dbConn.connect()).to.not.be.rejected;
         });
@@ -63,13 +70,15 @@ describe('db', () => {
         it('should connect into server without database specified', () => {
           const serverInfo = {
             ...config[dbAdapter],
-            database: db.ADAPTERS.find((adapter) => adapter.key === dbAdapter).defaultDatabase,
+            database: (<Adapter>db.ADAPTERS.find((adapter) => adapter.key === dbAdapter)).defaultDatabase,
             name: dbAdapter,
             adapter: dbAdapter,
           };
 
+          console.log(serverInfo.database);
+
           const serverSession = db.createServer(serverInfo);
-          const dbConn = serverSession.createConnection(serverInfo.database);
+          const dbConn = serverSession.createConnection(<string>serverInfo.database);
 
           return expect(dbConn.connect()).to.not.be.rejected;
         });
@@ -82,11 +91,11 @@ describe('db', () => {
           adapter: dbAdapter,
         };
 
-        let serverSession;
-        let dbConn;
+        let serverSession: Server;
+        let dbConn: Database;
         beforeEach(() => {
           serverSession = db.createServer(serverInfo);
-          dbConn = serverSession.createConnection(serverInfo.database);
+          dbConn = serverSession.createConnection(<string>serverInfo.database);
           return dbConn.connect();
         });
 
@@ -197,7 +206,7 @@ describe('db', () => {
             const columns = await dbConn.listTableColumns('users');
             expect(columns).to.have.length(6);
 
-            const column = (name) => columns.find((col) => col.columnName === name);
+            const column = (name: string) => columns.find((col) => col.columnName === name);
 
             /* eslint no-unused-expressions:0 */
             expect(column('id')).to.exist;
@@ -836,7 +845,11 @@ describe('db', () => {
               if (dbAdapter === 'sqlserver' || dbAdapter === 'sqlite') {
                 expect(result).to.have.property('fields').to.eql([]);
               } else {
-                const field = (name) => result.fields.find((item) => item.name === name);
+                const field = (name: string) => {
+                  return (<{name: string}[]>result.fields).find(
+                    (item) => item.name === name
+                  );
+                };
 
                 expect(field('id')).to.exist;
                 expect(field('username')).to.exist;
@@ -854,7 +867,11 @@ describe('db', () => {
 
               expect(results).to.have.length(1);
               const [result] = results;
-              const field = (name) => result.fields.find((item) => item.name === name);
+              const field = (name: string) => {
+                return (<{name: string}[]>result.fields).find(
+                  (item) => item.name === name
+                );
+              };
 
               expect(field('id')).to.exist;
               expect(field('username')).to.exist;

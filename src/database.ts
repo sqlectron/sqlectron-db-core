@@ -5,7 +5,7 @@ import createLogger from './logger';
 import type { AddressInfo } from 'net';
 import type { DatabaseFilter, SchemaFilter } from './filters';
 import type { Server } from './server';
-import type { AbstractAdapter } from './adapters/abstract_adapter';
+import type { AbstractAdapter, AdapterVersion } from './adapters/abstract_adapter';
 
 const logger = createLogger('db');
 
@@ -97,12 +97,12 @@ export class Database {
     this.server.removeDatabase(this.database);
   }
 
-  getVersion() {
+  getVersion(): AdapterVersion {
     this.checkIsConnected();
     return this.connection!.getVersion();
   }
 
-  listDatabases(filter: DatabaseFilter) {
+  listDatabases(filter?: DatabaseFilter) {
     this.checkIsConnected();
     return this.connection!.listDatabases(filter);
   }
@@ -127,27 +127,27 @@ export class Database {
     return this.connection!.listRoutines(filter);
   }
 
-  listTableColumns(table: string, schema: string) {
+  listTableColumns(table: string, schema?: string) {
     this.checkIsConnected();
     return this.connection!.listTableColumns(table, schema);
   }
 
-  listTableTriggers(table: string, schema: string) {
+  listTableTriggers(table: string, schema?: string) {
     this.checkIsConnected();
     return this.connection!.listTableTriggers(table, schema);
   }
 
-  listTableIndexes(table: string, schema: string) {
+  listTableIndexes(table: string, schema?: string) {
     this.checkIsConnected();
     return this.connection!.listTableIndexes(table, schema);
   }
 
-  getTableReferences(table: string, schema: string) {
+  getTableReferences(table: string, schema?: string) {
     this.checkIsConnected();
     return this.connection!.getTableReferences(table, schema);
   }
 
-  getTableKeys(table: string, schema: string) {
+  getTableKeys(table: string, schema?: string) {
     this.checkIsConnected();
     return this.connection!.getTableKeys(table, schema);
   }
@@ -172,12 +172,12 @@ export class Database {
     return this.connection!.getQuerySelectTop(table, limitValue, schema);
   }
 
-  getTableCreateScript(table: string, schema: string) {
+  getTableCreateScript(table: string, schema?: string) {
     this.checkIsConnected();
     return this.connection!.getTableCreateScript(table, schema);
   }
 
-  async getTableSelectScript(table: string, schema: string) {
+  async getTableSelectScript(table: string, schema?: string) {
     const columnNames = await this.getTableColumnNames(table, schema);
     const schemaSelection = this.resolveSchema(schema);
     return [
@@ -186,7 +186,7 @@ export class Database {
     ].join(' ');
   }
 
-  async getTableInsertScript(table: string, schema: string) {
+  async getTableInsertScript(table: string, schema?: string) {
     const columnNames = await this.getTableColumnNames(table, schema);
     const schemaSelection = this.resolveSchema(schema);
     return [
@@ -196,7 +196,7 @@ export class Database {
     ].join(' ');
   }
 
-  async getTableUpdateScript(table: string, schema: string) {
+  async getTableUpdateScript(table: string, schema?: string) {
     const columnNames = await this.getTableColumnNames(table, schema);
     const setColumnForm = (<string[]>this.wrap(columnNames)).map((col) => `${col}=?`).join(', ');
     const schemaSelection = this.resolveSchema(schema);
@@ -207,7 +207,7 @@ export class Database {
     ].join(' ');
   }
 
-  getTableDeleteScript(table: string, schema: string) {
+  getTableDeleteScript(table: string, schema?: string) {
     const schemaSelection = this.resolveSchema(schema);
     return [
       `DELETE FROM ${schemaSelection}${this.wrap(table)}`,
@@ -215,12 +215,12 @@ export class Database {
     ].join(' ');
   }
 
-  getViewCreateScript(view: string, schema: string) {
+  getViewCreateScript(view: string, schema?: string) {
     this.checkIsConnected();
     return this.connection!.getViewCreateScript(view, schema);
   }
 
-  getRoutineCreateScript(routine: string, type: string, schema: string) {
+  getRoutineCreateScript(routine: string, type: string, schema?: string) {
     this.checkIsConnected();
     return this.connection!.getRoutineCreateScript(routine, type, schema);
   }
@@ -229,13 +229,13 @@ export class Database {
     return this.connection!.truncateAllTables(schema);
   }
 
-  async getTableColumnNames(table: string, schema: string) {
+  async getTableColumnNames(table: string, schema?: string) {
     this.checkIsConnected();
     const columns = await this.connection!.listTableColumns(table, schema);
     return columns.map((column) => column.columnName);
   }
 
-  resolveSchema(schema: string) {
+  resolveSchema(schema?: string) {
     return schema ? `${this.wrap(schema)}.` : '';
   }
 

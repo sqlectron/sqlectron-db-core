@@ -93,7 +93,7 @@ export default class SqliteAdapter extends AbstractAdapter {
     };
   }
 
-  async executeQuery(queryText: string, connection?: sqlite3.Database, ): Promise<QueryRowResult[]> {
+  async executeQuery(queryText: string, connection?: sqlite3.Database): Promise<QueryRowResult[]> {
     const result = await this.driverExecuteQuery({ query: queryText, multiple: true }, connection);
 
     return (<QueryResult[]>result).map((value) => {

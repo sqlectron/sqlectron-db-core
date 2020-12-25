@@ -1,9 +1,9 @@
 import { expect } from 'chai';
-import { versionCompare } from '../dist/utils';
+import { versionCompare } from '../src/utils';
 
 describe('utils', () => {
   describe('.versionCompare', () => {
-    [
+    const parameters: [string, string, number][] = [
       ['8.0.2', '8.0.1', 1],
       ['8.0.2', '8.0.3', -1],
       ['8.0.2.', '8.1', -1],
@@ -16,7 +16,8 @@ describe('utils', () => {
       ['12.3', '8', 1],
       ['12', '8', 1],
       ['8', '12', -1],
-    ].forEach(([versionA, versionB, expected]) => {
+    ];
+    parameters.forEach(([versionA, versionB, expected]) => {
       it(`.versionCompare('${versionA}', '${versionB}') === ${expected}`, () => {
         expect(versionCompare(versionA, versionB)).to.be.eql(expected);
       });

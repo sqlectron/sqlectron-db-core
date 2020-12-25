@@ -10,7 +10,7 @@ import type { Database } from '../database';
 import type { Server } from '../server';
 import CassandraAdapter from './cassandra';
 
-interface Adapter {
+export interface Adapter {
   key: string;
   name: string;
   defaultPort?: number;

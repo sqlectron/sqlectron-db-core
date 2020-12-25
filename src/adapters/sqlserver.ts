@@ -101,7 +101,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     return data[0].schema;
   }
 
-  async listDatabases(filter: DatabaseFilter) {
+  async listDatabases(filter?: DatabaseFilter) {
     const databaseFilter = buildDatabaseFilter(filter, 'name');
     const sql = `
       SELECT name

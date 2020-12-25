@@ -43,11 +43,11 @@ export abstract class AbstractAdapter {
     return Promise.resolve();
   };
 
-  getVersion(): AdapterVersion | undefined {
+  getVersion(): AdapterVersion {
     return this.version;
   }
 
-  abstract listDatabases(filter: DatabaseFilter): Promise<string[]>;
+  abstract listDatabases(filter?: DatabaseFilter): Promise<string[]>;
 
   listSchemas(filter: SchemaFilter): Promise<string[]> {
     return Promise.resolve([]);
@@ -63,21 +63,21 @@ export abstract class AbstractAdapter {
     return Promise.resolve([]);
   }
 
-  abstract listTableColumns(table: string, schema: string): Promise<{columnName: string, dataType: string}[]>
+  abstract listTableColumns(table: string, schema?: string): Promise<{columnName: string, dataType: string}[]>
 
-  listTableTriggers(table: string, schema: string): Promise<string[]> {
+  listTableTriggers(table: string, schema?: string): Promise<string[]> {
     return Promise.resolve([]);
   }
 
-  listTableIndexes(table: string, schema: string): Promise<string[]> {
+  listTableIndexes(table: string, schema?: string): Promise<string[]> {
     return Promise.resolve([]);
   }
 
-  getTableReferences(table: string, schema: string): Promise<string[]> {
+  getTableReferences(table: string, schema?: string): Promise<string[]> {
     return Promise.resolve([]);
   }
 
-  getTableKeys(table: string, schema: string): Promise<{
+  getTableKeys(table: string, schema?: string): Promise<{
     columnName: string,
     keyType: string,
     constraintName: string | null,
@@ -90,15 +90,15 @@ export abstract class AbstractAdapter {
     return `SELECT * FROM ${this.wrapIdentifier(table)} LIMIT ${limit}`;
   }
 
-  getTableCreateScript(table: string, schema: string): Promise<string[]> {
+  getTableCreateScript(table: string, schema?: string): Promise<string[]> {
     return Promise.resolve([]);
   }
 
-  getViewCreateScript(view: string, schema: string): Promise<string[]> {
+  getViewCreateScript(view: string, schema?: string): Promise<string[]> {
     return Promise.resolve([]);
   }
 
-  getRoutineCreateScript(routine: string, type: string, schema: string): Promise<string[]> {
+  getRoutineCreateScript(routine: string, type: string, schema?: string): Promise<string[]> {
     return Promise.resolve([]);
   }
 

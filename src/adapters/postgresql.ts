@@ -117,7 +117,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return data.rows[0].schema;
   }
 
-  async listDatabases(filter: DatabaseFilter) {
+  async listDatabases(filter?: DatabaseFilter) {
     const databaseFilter = buildDatabaseFilter(filter, 'datname');
     const sql = `
       SELECT datname

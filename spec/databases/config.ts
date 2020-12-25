@@ -81,7 +81,7 @@ const dbs = {
     database: sqlserver.path && sqlserver.path[0],
   },
   cassandra: {
-    host: cassandra.hostname,
+    host: <string>cassandra.hostname,
     port: cassandra.port || 9042,
     database: cassandra.path && cassandra.path[0],
   },

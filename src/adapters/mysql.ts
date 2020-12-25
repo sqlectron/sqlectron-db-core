@@ -315,7 +315,7 @@ export default class MysqlAdapter extends AbstractAdapter {
     return (<mysql.RowDataPacket[]>data).map((row) => row.Key_name);
   }
 
-  async listDatabases(filter: DatabaseFilter) {
+  async listDatabases(filter?: DatabaseFilter) {
     const sql = 'show databases';
 
     const { data } = await this.driverExecuteQuery({ query: sql });
