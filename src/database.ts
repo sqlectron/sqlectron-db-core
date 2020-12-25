@@ -3,7 +3,7 @@ import { adapterFactory } from './adapters';
 import createLogger from './logger';
 
 import type { AddressInfo } from 'net';
-import type { DatabaseFilter } from './filters';
+import type { DatabaseFilter, SchemaFilter } from './filters';
 import type { Server } from './server';
 import type { AbstractAdapter } from './adapters/abstract_adapter';
 
@@ -102,22 +102,27 @@ export class Database {
     return this.connection!.getVersion();
   }
 
-  listSchemas(filter: any) {
+  listDatabases(filter: DatabaseFilter) {
+    this.checkIsConnected();
+    return this.connection!.listDatabases(filter);
+  }
+
+  listSchemas(filter: SchemaFilter) {
     this.checkIsConnected();
     return this.connection!.listSchemas(filter);
   }
 
-  listTables(filter: any) {
+  listTables(filter: SchemaFilter) {
     this.checkIsConnected();
     return this.connection!.listTables(filter);
   }
 
-  listViews(filter: any) {
+  listViews(filter: SchemaFilter) {
     this.checkIsConnected();
     return this.connection!.listViews(filter);
   }
 
-  listRoutines(filter: unknown) {
+  listRoutines(filter: SchemaFilter) {
     this.checkIsConnected();
     return this.connection!.listRoutines(filter);
   }
@@ -155,11 +160,6 @@ export class Database {
   executeQuery(queryText: string) {
     this.checkIsConnected();
     return this.connection!.executeQuery(queryText);
-  }
-
-  listDatabases(filter: DatabaseFilter) {
-    this.checkIsConnected();
-    return this.connection!.listDatabases(filter);
   }
 
   async getQuerySelectTop(table: string, schema: string, limit: number) {
@@ -215,9 +215,9 @@ export class Database {
     ].join(' ');
   }
 
-  getViewCreateScript(view: string /* , schema */) {
+  getViewCreateScript(view: string, schema: string) {
     this.checkIsConnected();
-    return this.connection!.getViewCreateScript(view);
+    return this.connection!.getViewCreateScript(view, schema);
   }
 
   getRoutineCreateScript(routine: string, type: string, schema: string) {

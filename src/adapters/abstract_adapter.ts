@@ -25,11 +25,16 @@ export interface QueryRowResult {
 export abstract class AbstractAdapter {
   readonly server;
   readonly database;
-  version?: AdapterVersion;
+  version: AdapterVersion;
 
   constructor(server: Server, database: Database) {
     this.server = server;
     this.database = database;
+    this.version = {
+      name: 'UNKNOWN',
+      version: '0.0.0',
+      string: 'UNKNOWN 0.0.0',
+    };
   }
 
   abstract connect(): Promise<void>;
@@ -50,11 +55,11 @@ export abstract class AbstractAdapter {
 
   abstract listTables(filter: SchemaFilter): Promise<{name: string}[]>;
 
-  listViews(filter: unknown): Promise<{name: string}[]> {
+  listViews(filter: SchemaFilter): Promise<{name: string}[]> {
     return Promise.resolve([]);
   }
 
-  listRoutines(filter: unknown): Promise<{schema?: string, routineName: string, routineType: string}[]> {
+  listRoutines(filter: SchemaFilter): Promise<{schema?: string, routineName: string, routineType: string}[]> {
     return Promise.resolve([]);
   }
 
@@ -89,7 +94,7 @@ export abstract class AbstractAdapter {
     return Promise.resolve([]);
   }
 
-  getViewCreateScript(view: string): Promise<string[]> {
+  getViewCreateScript(view: string, schema: string): Promise<string[]> {
     return Promise.resolve([]);
   }
 
