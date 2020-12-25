@@ -197,10 +197,6 @@ export default class CassandraAdapter extends AbstractAdapter {
     });
   }
 
-  getQuerySelectTop(table: string, limit: number) {
-    return `SELECT * FROM ${this.wrapIdentifier(table)} LIMIT ${limit}`;
-  }
-
   async truncateAllTables() {
     const result = await this.listTables();
     const tables = result.map((table) => table.name);

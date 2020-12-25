@@ -86,7 +86,7 @@ export abstract class AbstractAdapter {
     return Promise.resolve([]);
   }
 
-  getQuerySelectTop(table: string, limit: number, schema: string) {
+  getQuerySelectTop(table: string, limit: number, schema?: string) {
     return `SELECT * FROM ${this.wrapIdentifier(table)} LIMIT ${limit}`;
   }
 

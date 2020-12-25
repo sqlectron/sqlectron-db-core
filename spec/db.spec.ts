@@ -4,6 +4,7 @@ import config from './databases/config';
 import setupSQLite from './databases/sqlite/setup';
 import setupCassandra from './databases/cassandra/setup';
 import * as db from '../src';
+import { clearSelectLimit, setSelectLimit } from '../src/database';
 import { versionCompare } from '../src/utils';
 import type { Adapter } from '../src/adapters';
 import type { Database } from '../src/database';
@@ -632,22 +633,12 @@ describe('db', () => {
           });
         });
 
-        /*
-        TODO: figure out how to best handle limitQueryDefaultSelectTop
         describe('.getQuerySelectTop', () => {
-          let stubObj;
-
-          beforeEach(() => {
-            stubObj = stub(srcConfig, 'get');
-          });
-
           afterEach(() => {
-            stubObj.restore();
-            clearLimitSelect();
+            clearSelectLimit();
           });
 
           it('should return select with default limit', async () => {
-            stubObj.returns({});
             const sql = await dbConn.getQuerySelectTop('test_table');
             if (mysqlAdapters.includes(dbAdapter)) {
               expect(sql).to.eql('SELECT * FROM `test_table` LIMIT 1000');
@@ -663,9 +654,7 @@ describe('db', () => {
           });
 
           it('should return select with limit from config', async () => {
-            stubObj.returns({
-              limitQueryDefaultSelectTop: 125,
-            });
+            setSelectLimit(125);
             const sql = await dbConn.getQuerySelectTop('test_table');
             if (mysqlAdapters.includes(dbAdapter)) {
               expect(sql).to.eql('SELECT * FROM `test_table` LIMIT 125');
@@ -695,7 +684,6 @@ describe('db', () => {
             }
           });
         });
-        */
 
         if (dbAdapter !== 'cassandra') {
           describe('.query', function () { // eslint-disable-line func-names

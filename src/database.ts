@@ -10,7 +10,7 @@ import type { AbstractAdapter, AdapterVersion } from './adapters/abstract_adapte
 const logger = createLogger('db');
 
 const DEFAULT_LIMIT = 1000;
-let limitSelect: number | null = null;
+let selectLimit: number | null = null;
 
 export class Database {
   server: Server;
@@ -162,14 +162,13 @@ export class Database {
     return this.connection!.executeQuery(queryText);
   }
 
-  async getQuerySelectTop(table: string, schema: string, limit: number) {
+  async getQuerySelectTop(table: string, schema?: string, limit?: number) {
     this.checkIsConnected();
     let limitValue = limit;
-    if (typeof limit === 'undefined') {
-      await loadConfigLimit();
-      limitValue = (typeof limitSelect !== 'undefined' && limitSelect !== null) ? limitSelect : DEFAULT_LIMIT;
+    if (limit === undefined) {
+      limitValue = (selectLimit !== null) ? selectLimit : DEFAULT_LIMIT;
     }
-    return this.connection!.getQuerySelectTop(table, limitValue, schema);
+    return this.connection!.getQuerySelectTop(table, <number>limitValue, schema);
   }
 
   getTableCreateScript(table: string, schema?: string) {
@@ -248,18 +247,10 @@ export class Database {
   }
 }
 
-export function clearLimitSelect() {
-  limitSelect = null;
+export function clearSelectLimit(): void {
+  selectLimit = null;
 }
 
-async function loadConfigLimit() {
-  // TODO: rework, where this value is passed in on createServer as an option
-  return undefined;
-  /*
-  if (typeof limitSelect === 'undefined' || limitSelect === null) {
-    const { limitQueryDefaultSelectTop } = await config.get();
-    limitSelect = limitQueryDefaultSelectTop;
-  }
-  return limitSelect;
-  */
+export function setSelectLimit(limit: number): void {
+  selectLimit = limit;
 }
