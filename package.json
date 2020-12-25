@@ -17,9 +17,9 @@
     "test:postgresql": "DB_CLIENTS=postgresql npm run test",
     "test:redshift": "DB_CLIENTS=redshift npm run test",
     "test:cassandra": "DB_CLIENTS=cassandra npm run test",
-    "test": "mocha --exit --timeout 40000 --require @babel/register --reporter spec \"./spec/**/*.spec.js\"",
-    "test:coverage": "nyc --reporter=text mocha --exit --timeout 4000 --require @babel/register --reporter spec \"./spec/**/*.spec.js\"",
-    "watch-test": "mocha --require @babel/register --watch --reporter spec \"./spec/**/*.spec.js\""
+    "test": "mocha --exit --timeout 40000 --require ts-node/register --reporter spec \"./spec/**/*.spec.ts\"",
+    "test:coverage": "nyc --reporter=text mocha --exit --timeout 4000 --require ts-node/register --reporter spec \"./spec/**/*.spec.ts\"",
+    "watch-test": "mocha --require ts-node/register --watch --reporter spec \"./spec/**/*.spec.ts\""
   },
   "keywords": [
     "sqlectron",
@@ -54,7 +54,9 @@
     "@babel/plugin-transform-modules-commonjs": "^7.9.6",
     "@babel/register": "^7.9.0",
     "@types/cassandra-driver": "^3.6.0",
+    "@types/chai": "^4.2.14",
     "@types/debug": "^4.1.5",
+    "@types/mocha": "^8.2.0",
     "@types/mssql": "^6.0.7",
     "@types/pg": "^7.14.7",
     "@types/sql-query-identifier": "^1.1.0",
@@ -71,6 +73,7 @@
     "nyc": "^14.1.1",
     "portfinder": "^1.0.28",
     "sinon": "^7.5.0",
+    "ts-node": "^9.1.1",
     "typescript": "^4.1.2"
   },
   "nyc": {
