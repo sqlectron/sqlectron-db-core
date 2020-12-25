@@ -8,6 +8,7 @@ import SqlServerAdapter from './sqlserver';
 import type { AbstractAdapter } from './abstract_adapter';
 import type { Database } from '../database';
 import type { Server } from '../server';
+import CassandraAdapter from './cassandra';
 
 interface Adapter {
   key: string;
@@ -102,6 +103,8 @@ export function adapterFactory(
   database: Database
 ): AbstractAdapter {
   switch (adapter) {
+    case 'cassandra':
+      return new CassandraAdapter(server, database);
     case 'mysql':
     case 'mariadb':
       return new MysqlAdapter(server, database);
@@ -113,6 +116,6 @@ export function adapterFactory(
     case 'sqlserver':
       return new SqlServerAdapter(server, database);
     default:
-      throw new Error(`Requested adapter for unknown adapter: ${adapter}`);
+      throw new Error(`Unknown requested adapter: ${adapter}`);
   }
 }
