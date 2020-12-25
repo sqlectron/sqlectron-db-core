@@ -29,6 +29,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
   conn: {
     pool: pg.Pool
   };
+  defaultSchema: string = 'public';
 
   constructor(server: Server, database: Database) {
     super(server, database);
@@ -86,7 +87,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
   }
 
   async connect() {
-    const defaultSchema = await this.getSchema();
+    this.defaultSchema = await this.getSchema();
 
     const version = (await this.driverExecuteSingleQuery({
       query: 'select version()',
@@ -186,7 +187,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     }));
   }
 
-  async listTableColumns(table: string, schema: string) {
+  async listTableColumns(table: string, schema: string = this.defaultSchema) {
     const sql = `
       SELECT column_name, data_type
       FROM information_schema.columns
@@ -208,7 +209,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     }));
   }
 
-  async listTableTriggers(table: string, schema: string) {
+  async listTableTriggers(table: string, schema: string = this.defaultSchema) {
     const sql = `
       SELECT trigger_name
       FROM information_schema.triggers
@@ -226,7 +227,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return data.rows.map((row) => row.trigger_name);
   }
 
-  async listTableIndexes(table: string, schema: string) {
+  async listTableIndexes(table: string, schema: string = this.defaultSchema) {
     const sql = `
       SELECT indexname as index_name
       FROM pg_indexes
@@ -258,7 +259,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return data.rows.map((row) => row.schema_name);
   }
 
-  async getTableReferences(table: string, schema: string) {
+  async getTableReferences(table: string, schema: string = this.defaultSchema) {
     const sql = `
       SELECT ctu.table_name AS referenced_table_name
       FROM information_schema.table_constraints AS tc
@@ -278,7 +279,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return data.rows.map((row) => row.referenced_table_name);
   }
 
-  async getTableKeys(table: string, schema: string) {
+  async getTableKeys(table: string, schema: string = this.defaultSchema) {
     const sql = `
       SELECT
         tc.constraint_name,
@@ -313,11 +314,11 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     }));
   }
 
-  getQuerySelectTop(table: string, limit: number, schema: string) {
+  getQuerySelectTop(table: string, limit: number, schema: string = this.defaultSchema) {
     return `SELECT * FROM ${this.wrapIdentifier(schema)}.${this.wrapIdentifier(table)} LIMIT ${limit}`;
   }
 
-  async getTableCreateScript(table: string, schema: string) {
+  async getTableCreateScript(table: string, schema: string = this.defaultSchema) {
     // Reference http://stackoverflow.com/a/32885178
 
     const params = [
@@ -396,7 +397,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return [createTable];
   }
 
-  async getViewCreateScript(view: string, schema: string) {
+  async getViewCreateScript(view: string, schema: string = this.defaultSchema) {
     const createViewSql = `CREATE OR REPLACE VIEW ${wrapIdentifier(schema)}.${view} AS`;
 
     const sql = 'SELECT pg_get_viewdef($1::regclass, true)';
@@ -408,7 +409,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return data.rows.map((row) => `${createViewSql}\n${row.pg_get_viewdef}`);
   }
 
-  async getRoutineCreateScript(routine: string, type: string, schema: string) {
+  async getRoutineCreateScript(routine: string, type: string, schema: string = this.defaultSchema) {
     let mapFunction;
     let sql;
     if (versionCompare(this.version.version, '8.4') >= 0) {
@@ -480,7 +481,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return data.rows.map(mapFunction);
   }
 
-  async truncateAllTables(schema: string) {
+  async truncateAllTables(schema: string = this.defaultSchema) {
     await this.runWithConnection(async (connection) => {
       const sql = `
         SELECT quote_ident(table_name) as table_name
