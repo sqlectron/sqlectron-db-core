@@ -10,6 +10,7 @@ import type { Server } from '../server';
 export interface Adapter {
   key: string;
   name: string;
+  adapter: typeof AbstractAdapter,
   defaultPort?: number;
   defaultDatabase?: string;
   disabledFeatures: string[];
@@ -22,6 +23,7 @@ export const ADAPTERS: Adapter[] = [
   {
     key: 'mysql',
     name: 'MySQL',
+    adapter: MysqlAdapter,
     defaultPort: 3306,
     disabledFeatures: [
       'server:schema',
@@ -31,6 +33,7 @@ export const ADAPTERS: Adapter[] = [
   {
     key: 'mariadb',
     name: 'MariaDB',
+    adapter: MysqlAdapter,
     defaultPort: 3306,
     disabledFeatures: [
       'server:schema',
@@ -40,6 +43,7 @@ export const ADAPTERS: Adapter[] = [
   {
     key: 'postgresql',
     name: 'PostgreSQL',
+    adapter: PostgresqlAdapter,
     defaultDatabase: 'postgres',
     defaultPort: 5432,
     disabledFeatures: [
@@ -49,6 +53,7 @@ export const ADAPTERS: Adapter[] = [
   {
     key: 'redshift',
     name: 'Redshift',
+    adapter: PostgresqlAdapter,
     defaultDatabase: 'postgres',
     defaultPort: 5432,
     disabledFeatures: [
@@ -58,12 +63,14 @@ export const ADAPTERS: Adapter[] = [
   {
     key: 'sqlserver',
     name: 'Microsoft SQL Server',
+    adapter: SqlServerAdapter,
     defaultPort: 1433,
     disabledFeatures: [],
   },
   {
     key: 'sqlite',
     name: 'SQLite',
+    adapter: SqliteAdapter,
     defaultDatabase: ':memory:',
     disabledFeatures: [
       'server:ssl',
@@ -81,6 +88,7 @@ export const ADAPTERS: Adapter[] = [
   {
     key: 'cassandra',
     name: 'Cassandra',
+    adapter: CassandraAdapter,
     defaultPort: 9042,
     disabledFeatures: [
       'server:ssl',
@@ -93,26 +101,23 @@ export const ADAPTERS: Adapter[] = [
   },
 ];
 
+export function registerAdapter(adapter: Adapter): void {
+  if (ADAPTERS.find((a) => adapter.key === a.key)) {
+    throw new Error(`Adapter already registered with that key`);
+  }
+  ADAPTERS.push(adapter);
+}
 
 export function adapterFactory(
-  adapter: string,
+  adapterKey: string,
   server: Server,
   database: Database
 ): AbstractAdapter {
-  switch (adapter) {
-    case 'cassandra':
-      return new CassandraAdapter(server, database);
-    case 'mysql':
-    case 'mariadb':
-      return new MysqlAdapter(server, database);
-    case 'postgresql':
-    case 'redshift':
-      return new PostgresqlAdapter(server, database);
-    case 'sqlite':
-      return new SqliteAdapter(server, database);
-    case 'sqlserver':
-      return new SqlServerAdapter(server, database);
-    default:
-      throw new Error(`Unknown requested adapter: ${adapter}`);
+  const adapter = ADAPTERS.find((a) => a.key === adapterKey);
+  if (!adapter) {
+    throw new Error(`Unknown requested adapter: ${adapterKey}`);
   }
+  return new (
+    adapter.adapter as {new(server: Server, database: Database): AbstractAdapter}
+  )(server, database);
 }

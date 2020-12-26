@@ -47,6 +47,7 @@ export interface TableKeysResult {
 }
 
 export type QueryReturn = {execute: () => Promise<QueryRowResult[]>, cancel: () => void};
+
 export abstract class AbstractAdapter {
   readonly server;
   readonly database;
