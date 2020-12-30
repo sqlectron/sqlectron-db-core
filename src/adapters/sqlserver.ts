@@ -506,7 +506,6 @@ export default class SqlServerAdapter extends AbstractAdapter {
   }
 
   async driverExecuteQuery<T = unknown>(queryArgs: QueryArgs, connection?: ConnectionPool): Promise<QueryResult<T>> {
-    connection = connection || this.conn.connection;
     const runQuery = async (connection: ConnectionPool): Promise<QueryResult<T>> => {
       const request = connection.request();
       if (queryArgs.multiple) {
@@ -530,7 +529,9 @@ export default class SqlServerAdapter extends AbstractAdapter {
   }
 
   async runWithConnection<T = QueryResult>(run: (connection: ConnectionPool) => Promise<T>): Promise<T> {
-    this.conn.connection = await (new ConnectionPool(this.conn.dbConfig)).connect();
+    if (!this.conn.connection) {
+      this.conn.connection = await (new ConnectionPool(this.conn.dbConfig)).connect();
+    }
     return run(this.conn.connection);
   }
 
