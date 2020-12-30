@@ -1,11 +1,11 @@
-import { connect } from 'mssql';
+import { ConnectionPool } from 'mssql';
 
 import { buildDatabaseFilter, buildSchemaFilter } from '../filters';
 import createLogger from '../logger';
 import { identifyCommands } from '../utils';
 import { AbstractAdapter, QueryArgs, QueryRowResult } from './abstract_adapter';
 
-import type { ConnectionPool, config, Request, IResult, IRecordSet } from 'mssql';
+import type { config, Request, IResult, IRecordSet } from 'mssql';
 import type { Database } from '../database';
 import type { DatabaseFilter, SchemaFilter } from '../filters';
 import type { Server } from '../server';
@@ -23,10 +23,6 @@ const logger = createLogger('db:clients:sqlserver');
 const mmsqlErrors = {
   CANCELED: 'ECANCEL',
 };
-
-declare module "mssql" {
-  function connect(config: config): Promise<ConnectionPool>;
-}
 
 interface QueryResult<T = unknown> {
   request: Request;
@@ -46,7 +42,10 @@ interface ListTableQuery {
 }
 
 export default class SqlServerAdapter extends AbstractAdapter {
-  conn: { dbConfig: config};
+  conn: {
+    dbConfig: config;
+    connection?: ConnectionPool;
+  };
 
   constructor(server: Server, database: Database) {
     super(server, database);
@@ -100,8 +99,10 @@ export default class SqlServerAdapter extends AbstractAdapter {
   }
 
   async disconnect(): Promise<void> {
-    const connection = await connect(this.conn.dbConfig);
-    return connection.close();
+    if (!this.conn.connection) {
+      return;
+    }
+    return this.conn.connection.close();
   }
 
   async getSchema(connection?: ConnectionPool): Promise<string> {
@@ -505,6 +506,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
   }
 
   async driverExecuteQuery<T = unknown>(queryArgs: QueryArgs, connection?: ConnectionPool): Promise<QueryResult<T>> {
+    connection = connection || this.conn.connection;
     const runQuery = async (connection: ConnectionPool): Promise<QueryResult<T>> => {
       const request = connection.request();
       if (queryArgs.multiple) {
@@ -528,9 +530,8 @@ export default class SqlServerAdapter extends AbstractAdapter {
   }
 
   async runWithConnection<T = QueryResult>(run: (connection: ConnectionPool) => Promise<T>): Promise<T> {
-    const connection = await connect(this.conn.dbConfig);
-
-    return run(connection);
+    this.conn.connection = await (new ConnectionPool(this.conn.dbConfig)).connect();
+    return run(this.conn.connection);
   }
 
   wrapIdentifier(value: string): string {
