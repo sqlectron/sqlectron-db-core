@@ -434,15 +434,13 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
             const result = await promiseQuery;
             const data = request.multiple ? result.recordsets : result.recordset;
-            const affectedRows = result.rowsAffected ?
-              result.rowsAffected.reduce((a, b) => a + b, 0) :
-              undefined;
+            const affectedRows = result.rowsAffected.reduce((a, b) => a + b, 0);
 
             const commands = identifyCommands(queryText).map((item) => item.type);
 
             // Executing only non select queries will not return results.
             // So we "fake" there is at least one result.
-            const results = <IRecordSet<unknown>[]>(!data.length && affectedRows ? [[]] : data);
+            const results = <IRecordSet<unknown>[]>(!data.length ? [[]] : data);
 
             return results.map((_, idx) => parseRowQueryResult(
               results[idx],
@@ -484,7 +482,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     // Executing only non select queries will not return results.
     // So we "fake" there is at least one result.
     const rowsAffected = result.rowsAffected.reduce((a, b) => a + b, 0);
-    const results = !data.length && rowsAffected ? [[]] : data;
+    const results = !data.length ? [[]] : data;
 
     return (<Array<IRecordSet<unknown> | []>>results).map(
       (value: IRecordSet<unknown> | [], idx: number) => {
