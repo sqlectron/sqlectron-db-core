@@ -56,20 +56,20 @@ export default class SqlServerAdapter extends AbstractAdapter {
   }
 
   configDatabase(): config {
-    const config = {
+    const config: config = {
       user: this.server.config.user,
       password: this.server.config.password,
       server: <string>this.server.config.host,
       database: this.database.database,
       port: this.server.config.port,
       requestTimeout: Infinity,
-      appName: this.server.config.applicationName || 'sqlectron',
       domain: this.server.config.domain,
       pool: {
         max: 5,
       },
       options: {
-        encrypt: this.server.config.ssl,
+        encrypt: !!this.server.config.ssl,
+        appName: this.server.config.applicationName || 'sqlectron',
         enableArithAbort: true,
       },
     };
@@ -79,7 +79,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
       config.port = this.server.config.localPort;
     }
 
-    return <config>config;
+    return config;
   }
 
   async connect(): Promise<void> {
