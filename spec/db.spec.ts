@@ -31,7 +31,7 @@ const dbSchemas: {[key: string]: string} = {
  * List of selected databases to be tested in the current task
  */
 const dbsToTest: adapterType[] = <adapterType[]>(
-  process.env.DB_ADAPTERS || ''
+  process.env.DB_ADAPTERS || process.env.DB_CLIENTS || ''
 ).split(',').filter((adapter) => !!adapter);
 
 const postgresAdapters = ['postgresql', 'redshift'];
