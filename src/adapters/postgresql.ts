@@ -398,7 +398,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       params,
     })).rows[0];
     if (constraintResult.constraint.length > 0) {
-      createTable += `\n${constraintResult.constraint}`;
+      createTable += `\n${constraintResult.constraint};`;
     }
     return [createTable];
   }

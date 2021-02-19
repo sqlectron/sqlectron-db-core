@@ -94,3 +94,11 @@ export function identifyCommands(queryText: string): Result[] {
     return [];
   }
 }
+
+export function appendSemiColon(query: string): string {
+  let result = query.trimEnd()
+  if (result[result.length - 1] !== ';') {
+    result += ';';
+  }
+  return result;
+}

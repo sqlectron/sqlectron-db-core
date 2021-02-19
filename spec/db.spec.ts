@@ -363,7 +363,7 @@ describe('db', () => {
               '  PRIMARY KEY (`id`),\n' +
               '  KEY `role_id` (`role_id`),\n' +
               '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
-              ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci');
+              ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;');
             } else if (mysqlAdapters.includes(dbAdapter)) {
               expect(createScript).to.contain('CREATE TABLE `users` (\n' +
                 '  `id` int(11) NOT NULL AUTO_INCREMENT,\n' +
@@ -375,7 +375,7 @@ describe('db', () => {
                 '  PRIMARY KEY (`id`),\n' +
                 '  KEY `role_id` (`role_id`),\n' +
                 '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
-              ') ENGINE=InnoDB');
+              ') ENGINE=InnoDB;');
             } else if (postgresAdapters.includes(dbAdapter)) {
               expect(createScript).to.eql('CREATE TABLE public.users (\n' +
                 '  id integer NOT NULL,\n' +
@@ -386,7 +386,7 @@ describe('db', () => {
                 '  createdat date NULL\n' +
                 ');\n' +
                 '\n' +
-                'ALTER TABLE public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id)',
+                'ALTER TABLE public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);',
               );
             } else if (dbAdapter === 'sqlserver') {
               expect(createScript).to.contain('CREATE TABLE users (\r\n' +
@@ -408,7 +408,7 @@ describe('db', () => {
                 '  role_id INT,\n' +
                 '  createdat DATETIME NULL,\n' +
                 '  PRIMARY KEY (id),\n' +
-                '  FOREIGN KEY (role_id) REFERENCES roles (id)\n)',
+                '  FOREIGN KEY (role_id) REFERENCES roles (id)\n);',
               );
             } else if (dbAdapter === 'cassandra') {
               expect(createScript).to.eql(undefined);

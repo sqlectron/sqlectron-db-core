@@ -2,6 +2,7 @@ import sqlite3 from 'sqlite3';
 import { identify, Result } from 'sql-query-identifier';
 
 import createLogger from '../logger';
+import { appendSemiColon } from '../utils';
 import { Adapter, ADAPTERS } from './';
 import { AbstractAdapter } from './abstract_adapter';
 
@@ -187,7 +188,7 @@ export default class SqliteAdapter extends AbstractAdapter {
 
     const { data } = <QueryResult>await this.driverExecuteQuery({ query: sql });
 
-    return (<{sql: string}[]>data).map((row) => row.sql);
+    return (<{sql: string}[]>data).map((row) => appendSemiColon(row.sql));
   }
 
   async getViewCreateScript(view: string): Promise<string[]> {
