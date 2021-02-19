@@ -365,6 +365,7 @@ describe('db', () => {
               '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
               ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;');
             } else if (mysqlAdapters.includes(dbAdapter)) {
+              const charset = dbAdapter === 'mysql' ? 'latin1' : 'utf8mb4';
               expect(createScript).to.eql('CREATE TABLE `users` (\n' +
                 '  `id` int(11) NOT NULL AUTO_INCREMENT,\n' +
                 '  `username` varchar(45) DEFAULT NULL,\n' +
@@ -375,7 +376,7 @@ describe('db', () => {
                 '  PRIMARY KEY (`id`),\n' +
                 '  KEY `role_id` (`role_id`),\n' +
                 '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
-              ') ENGINE=InnoDB DEFAULT CHARSET=latin1;');
+                `) ENGINE=InnoDB DEFAULT CHARSET=${charset};`);
             } else if (postgresAdapters.includes(dbAdapter)) {
               expect(createScript).to.eql('CREATE TABLE public.users (\n' +
                 '  id integer NOT NULL,\n' +
