@@ -200,7 +200,7 @@ export default class SqliteAdapter extends AbstractAdapter {
 
     const { data } = <QueryResult>await this.driverExecuteQuery({ query: sql });
 
-    return (<{sql: string}[]>data).map((row) => row.sql);
+    return (<{sql: string}[]>data).map((row) => appendSemiColon(row.sql));
   }
 
   async truncateAllTables(): Promise<void> {

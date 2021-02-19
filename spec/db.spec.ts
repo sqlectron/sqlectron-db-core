@@ -353,7 +353,7 @@ describe('db', () => {
             const [createScript] = await dbConn.getTableCreateScript('users');
 
             if (dbAdapter === 'mysql' && versionCompare(dbConn.getVersion().version, '8') >= 0) {
-              expect(createScript).to.contain('CREATE TABLE `users` (\n' +
+              expect(createScript).to.eql('CREATE TABLE `users` (\n' +
               '  `id` int NOT NULL AUTO_INCREMENT,\n' +
               '  `username` varchar(45) DEFAULT NULL,\n' +
               '  `email` varchar(150) DEFAULT NULL,\n' +
@@ -365,7 +365,7 @@ describe('db', () => {
               '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
               ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;');
             } else if (mysqlAdapters.includes(dbAdapter)) {
-              expect(createScript).to.contain('CREATE TABLE `users` (\n' +
+              expect(createScript).to.eql('CREATE TABLE `users` (\n' +
                 '  `id` int(11) NOT NULL AUTO_INCREMENT,\n' +
                 '  `username` varchar(45) DEFAULT NULL,\n' +
                 '  `email` varchar(150) DEFAULT NULL,\n' +
@@ -375,7 +375,7 @@ describe('db', () => {
                 '  PRIMARY KEY (`id`),\n' +
                 '  KEY `role_id` (`role_id`),\n' +
                 '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
-              ') ENGINE=InnoDB;');
+              ') ENGINE=InnoDB DEFAULT CHARSET=latin1;');
             } else if (postgresAdapters.includes(dbAdapter)) {
               expect(createScript).to.eql('CREATE TABLE public.users (\n' +
                 '  id integer NOT NULL,\n' +
@@ -572,7 +572,7 @@ describe('db', () => {
               expect(createScript).to.contain([
                 'VIEW `email_view`',
                 'AS select `users`.`email` AS `email`,`users`.`password` AS `password`',
-                'from `users`',
+                'from `users`;',
               ].join(' '));
             } else if (dbAdapter === 'postgresql') {
               expect(createScript).to.eql([
@@ -597,7 +597,7 @@ describe('db', () => {
               expect(createScript).to.eql([
                 'CREATE VIEW email_view AS',
                 '  SELECT users.email, users.password',
-                '  FROM users',
+                '  FROM users;',
               ].join('\n'));
             } else if (dbAdapter === 'cassandra') {
               expect(createScript).to.eql(undefined);
@@ -625,14 +625,14 @@ describe('db', () => {
                 ' LANGUAGE sql',
                 'AS $function$',
                 '  SELECT COUNT(*) FROM users AS total;',
-                '$function$\n',
+                '$function$;',
               ].join('\n'));
             } else if (dbAdapter === 'redshift') {
               expect(createScript).to.eql([
                 'CREATE OR REPLACE FUNCTION public.users_count()',
                 '  RETURNS bigint AS $$',
                 '  SELECT COUNT(*) FROM users AS total;',
-                '$$ LANGUAGE sql VOLATILE',
+                '$$ LANGUAGE sql VOLATILE;',
               ].join('\n'));
             } else if (dbAdapter === 'sqlserver') {
               expect(createScript).to.contain('CREATE PROCEDURE dbo.users_count');
