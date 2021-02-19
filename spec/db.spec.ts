@@ -365,7 +365,7 @@ describe('db', () => {
               '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
               ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;');
             } else if (mysqlAdapters.includes(dbAdapter)) {
-              const charset = dbAdapter === 'mysql' ? 'latin1' : 'utf8mb4';
+              const charset = dbAdapter === 'mariadb' && versionCompare(dbConn.getVersion().version, '10.1') > 0 ? 'utf8mb4' : 'latin1';
               expect(createScript).to.eql('CREATE TABLE `users` (\n' +
                 '  `id` int(11) NOT NULL AUTO_INCREMENT,\n' +
                 '  `username` varchar(45) DEFAULT NULL,\n' +
