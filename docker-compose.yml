@@ -54,7 +54,7 @@ services:
     command: npm test
     working_dir: /usr/src/app
     environment:
-      DB_CLIENTS: mysql,postgresql,cassandra
+      DB_ADAPTERS: mysql,postgresql,cassandra
       MYSQL_ENV_MYSQL_USER: root
       MYSQL_ENV_MYSQL_PASSWORD: password
     volumes:
