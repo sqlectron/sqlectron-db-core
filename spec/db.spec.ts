@@ -378,7 +378,8 @@ describe('db', () => {
                 '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
                 `) ENGINE=InnoDB DEFAULT CHARSET=${charset};`);
             } else if (postgresAdapters.includes(dbAdapter)) {
-              expect(createScript).to.eql('CREATE TABLE public.users (\n' +
+              expect(createScript).to.eql(
+                'CREATE TABLE public.users (\n' +
                 '  id integer NOT NULL,\n' +
                 '  username text NOT NULL,\n' +
                 '  email text NOT NULL,\n' +
@@ -390,16 +391,17 @@ describe('db', () => {
                 'ALTER TABLE public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);',
               );
             } else if (dbAdapter === 'sqlserver') {
-              expect(createScript).to.contain('CREATE TABLE users (\r\n' +
+              expect(createScript).to.eql(
+                'CREATE TABLE users (\r\n' +
                 '  id int IDENTITY(1,1) NOT NULL,\r\n' +
                 '  username varchar(45)  NULL,\r\n' +
                 '  email varchar(150)  NULL,\r\n' +
                 '  password varchar(45)  NULL,\r\n' +
                 '  role_id int  NULL,\r\n' +
                 '  createdat datetime  NULL,\r\n' +
-                ')\r\n');
-              expect(createScript).to.contain('ALTER TABLE users ADD CONSTRAINT PK__users');
-              expect(createScript).to.contain('PRIMARY KEY (id)');
+                ');\r\n' +
+                'ALTER TABLE users ADD CONSTRAINT PK__users PRIMARY KEY (id);'
+              );
             } else if (dbAdapter === 'sqlite') {
               expect(createScript).to.eql('CREATE TABLE users (\n' +
                 '  id INTEGER NOT NULL,\n' +
@@ -409,7 +411,8 @@ describe('db', () => {
                 '  role_id INT,\n' +
                 '  createdat DATETIME NULL,\n' +
                 '  PRIMARY KEY (id),\n' +
-                '  FOREIGN KEY (role_id) REFERENCES roles (id)\n);',
+                '  FOREIGN KEY (role_id) REFERENCES roles (id)\n' +
+                ');',
               );
             } else if (dbAdapter === 'cassandra') {
               expect(createScript).to.eql(undefined);

@@ -298,11 +298,11 @@ export default class SqlServerAdapter extends AbstractAdapter {
     const sql = `
       SELECT  ('CREATE TABLE ' + so.name + ' (' +
         CHAR(13)+CHAR(10) + REPLACE(o.list, '&#x0D;', CHAR(13)) +
-        ')' + CHAR(13)+CHAR(10) +
+        ');' + CHAR(13)+CHAR(10) +
         CASE WHEN tc.constraint_name IS NULL THEN ''
              ELSE + CHAR(13)+CHAR(10) + 'ALTER TABLE ' + so.Name +
              ' ADD CONSTRAINT ' + tc.constraint_name  +
-             ' PRIMARY KEY ' + '(' + LEFT(j.list, Len(j.list)-1) + ')'
+             ' PRIMARY KEY ' + '(' + LEFT(j.list, Len(j.list)-1) + ');'
         END) AS createtable
       FROM sysobjects so
       CROSS APPLY
