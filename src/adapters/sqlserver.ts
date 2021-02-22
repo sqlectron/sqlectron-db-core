@@ -381,7 +381,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteSingleQuery<{routine_definition: string}>({ query: sql });
 
-    return data.map((row) => appendSemiColon(row.routine_definition));
+    return data.map((row) => appendSemiColon(row.routine_definition.trim()));
   }
 
   async truncateAllTables(): Promise<void> {

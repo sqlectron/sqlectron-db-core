@@ -575,7 +575,7 @@ describe('db', () => {
             const [createScript] = await dbConn.getViewCreateScript('email_view');
             if (mysqlAdapters.includes(dbAdapter)) {
               expect(createScript).to.eql([
-                'CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER' +
+                'CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER',
                 'VIEW `email_view`',
                 'AS select `users`.`email` AS `email`,`users`.`password` AS `password`',
                 'from `users`;',
