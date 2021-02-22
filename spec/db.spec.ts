@@ -575,6 +575,7 @@ describe('db', () => {
             const [createScript] = await dbConn.getViewCreateScript('email_view');
             if (mysqlAdapters.includes(dbAdapter)) {
               expect(createScript).to.eql([
+                'CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER' +
                 'VIEW `email_view`',
                 'AS select `users`.`email` AS `email`,`users`.`password` AS `password`',
                 'from `users`;',
@@ -594,9 +595,9 @@ describe('db', () => {
               ].join('\n'));
             } else if (dbAdapter === 'sqlserver') {
               expect(createScript).to.eql([
-                '\nCREATE VIEW dbo.email_view AS',
+                'CREATE VIEW dbo.email_view AS',
                 'SELECT dbo.users.email, dbo.users.password',
-                'FROM dbo.users;\n',
+                'FROM dbo.users;',
               ].join('\n'));
             } else if (dbAdapter === 'sqlite') {
               expect(createScript).to.eql([
@@ -616,12 +617,11 @@ describe('db', () => {
           it('should return CREATE PROCEDURE/FUNCTION script', async () => {
             const [createScript] = await dbConn.getRoutineCreateScript('users_count', 'Procedure');
             if (mysqlAdapters.includes(dbAdapter)) {
-              expect(createScript).to.eql('CREATE DEFINER=');
-              expect(createScript).to.contain([
-                'PROCEDURE `users_count`()',
+              expect(createScript).to.eql([
+                'CREATE DEFINER=`root`@`localhost` PROCEDURE `users_count`()',
                 'BEGIN',
                 '  SELECT COUNT(*) FROM users;',
-                'END',
+                'END;',
               ].join('\n'));
             } else if (dbAdapter === 'postgresql') {
               expect(createScript).to.eql([
@@ -640,9 +640,16 @@ describe('db', () => {
                 '$$ LANGUAGE sql VOLATILE;',
               ].join('\n'));
             } else if (dbAdapter === 'sqlserver') {
-              expect(createScript).to.eql('CREATE PROCEDURE dbo.users_count');
-              expect(createScript).to.contain('@Count int OUTPUT');
-              expect(createScript).to.contain('SELECT @Count = COUNT(*) FROM dbo.users');
+              expect(createScript).to.eql([
+                'CREATE PROCEDURE dbo.users_count',
+                '(',
+                '  @Count int OUTPUT',
+                ')',
+                'AS',
+                '  BEGIN',
+                '    SELECT @Count = COUNT(*) FROM dbo.users',
+                '  END;'
+              ].join('\n'));
             } else if (dbAdapter === 'cassandra' || dbAdapter === 'sqlite') {
               expect(createScript).to.eql(undefined);
             } else {
