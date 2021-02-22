@@ -391,7 +391,7 @@ describe('db', () => {
                 'ALTER TABLE public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);',
               );
             } else if (dbAdapter === 'sqlserver') {
-              expect(createScript).to.eql(
+              expect(createScript).to.match(new RegExp(
                 'CREATE TABLE users (\r\n' +
                 '  id int IDENTITY(1,1) NOT NULL,\r\n' +
                 '  username varchar(45)  NULL,\r\n' +
@@ -400,8 +400,8 @@ describe('db', () => {
                 '  role_id int  NULL,\r\n' +
                 '  createdat datetime  NULL,\r\n' +
                 ');\r\n' +
-                'ALTER TABLE users ADD CONSTRAINT PK__users PRIMARY KEY (id);'
-              );
+                'ALTER TABLE users ADD CONSTRAINT PK__users__[a-zA-Z0-9]+ PRIMARY KEY \\(id\\);'
+              ));
             } else if (dbAdapter === 'sqlite') {
               expect(createScript).to.eql('CREATE TABLE users (\n' +
                 '  id INTEGER NOT NULL,\n' +
