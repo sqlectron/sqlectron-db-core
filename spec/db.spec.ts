@@ -392,14 +392,14 @@ describe('db', () => {
               );
             } else if (dbAdapter === 'sqlserver') {
               expect(createScript).to.match(new RegExp(
-                'CREATE TABLE users (\r\n' +
-                '  id int IDENTITY(1,1) NOT NULL,\r\n' +
-                '  username varchar(45)  NULL,\r\n' +
-                '  email varchar(150)  NULL,\r\n' +
-                '  password varchar(45)  NULL,\r\n' +
-                '  role_id int  NULL,\r\n' +
-                '  createdat datetime  NULL,\r\n' +
-                ');\r\n' +
+                'CREATE TABLE users \\(\\r\\n' +
+                '  id int IDENTITY\\(1,1\\) NOT NULL,\\r\\n' +
+                '  username varchar\\(45\\)  NULL,\\r\\n' +
+                '  email varchar\\(150\\)  NULL,\\r\\n' +
+                '  password varchar\\(45\\)  NULL,\\r\\n' +
+                '  role_id int  NULL,\\r\\n' +
+                '  createdat datetime  NULL,\\r\\n' +
+                '\\);\\r\\n\\r\\n' +
                 'ALTER TABLE users ADD CONSTRAINT PK__users__[a-zA-Z0-9]+ PRIMARY KEY \\(id\\);'
               ));
             } else if (dbAdapter === 'sqlite') {
