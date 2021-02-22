@@ -3,7 +3,7 @@ import { identify } from 'sql-query-identifier';
 
 import createLogger from '../logger';
 import { createCancelablePromise } from '../utils';
-import { AbstractAdapter } from './abstract_adapter';
+import { AbstractAdapter, QueryArrayRowResult } from './abstract_adapter';
 
 import type { Result } from 'sql-query-identifier';
 import type {
@@ -205,8 +205,11 @@ export default class MysqlAdapter extends AbstractAdapter {
     };
   }
 
-  async executeQuery(queryText: string, connection?: mysql.PoolConnection): Promise<QueryRowResult[]> {
-    const { data, fields } = await this.driverExecuteQuery({ query: queryText }, connection);
+  async executeQuery(queryText: string, connection?: mysql.PoolConnection): Promise<QueryArrayRowResult[]> {
+    const { data, fields } = await this.driverExecuteQuery({
+      query: queryText,
+      rowMode: 'array',
+    }, connection);
 
     if (
       !data
@@ -223,9 +226,9 @@ export default class MysqlAdapter extends AbstractAdapter {
       return [parseRowQueryResult(<mysql.RowDataPacket[]>data, <mysql.FieldPacket[]>fields, commands[0])];
     }
 
-    return (<mysql.RowDataPacket[][]>data).map((_, idx) => {
+    return (<mysql.RowDataPacket[][]>data).map((row, idx) => {
       return parseRowQueryResult(
-        (<mysql.RowDataPacket[][]>data)[idx],
+        row,
         (<mysql.FieldPacket[][]>fields)[idx],
         commands[idx]
       )
@@ -442,7 +445,11 @@ export default class MysqlAdapter extends AbstractAdapter {
   async driverExecuteQuery(queryArgs: QueryArgs, connection?: mysql.PoolConnection): Promise<QueryResult> {
     const runQuery = (connection: mysql.PoolConnection): Promise<QueryResult> => {
       return new Promise((resolve, reject) => {
-        connection.query(queryArgs.query, queryArgs.params, (err, data, fields) => {
+        connection.query({
+          sql: queryArgs.query,
+          values: queryArgs.params,
+          rowsAsArray: queryArgs.rowMode === 'array'
+        }, (err, data, fields) => {
           if (err && err.code === mysqlErrors.EMPTY_QUERY) {
             return resolve({data: [], fields: []});
           }
@@ -452,7 +459,7 @@ export default class MysqlAdapter extends AbstractAdapter {
 
           resolve({
             data: (data as mysql.RowDataPacket[] | mysql.RowDataPacket[][] | mysql.ResultSetHeader),
-            fields
+            fields,
           });
         });
       });
@@ -528,7 +535,7 @@ function parseRowQueryResult(
   data: mysql.RowDataPacket[] | mysql.ResultSetHeader,
   fields: mysql.FieldPacket[],
   command: string
-): QueryRowResult {
+): QueryArrayRowResult {
   // Fallback in case the identifier could not reconize the command
   const isSelect = Array.isArray(data);
   const dataArray = isSelect ? <mysql.RowDataPacket[]>data || [] : [];

@@ -3,9 +3,9 @@ import { ConnectionString } from 'connection-string';
 
 const postgres = new ConnectionString(process.env.POSTGRES_DSN, {
   protocol: 'postgres',
-  user: 'postgres',
-  password: 'Password12!',
-  path: ['sqlectron'],
+  user: 'popsql',
+  password: 'password',
+  path: ['popsql'],
   hosts: [{ name: '127.0.0.1', port: 5432 }],
 });
 const redshift = new ConnectionString(process.env.REDSHIFT_DSN, {

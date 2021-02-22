@@ -5,7 +5,7 @@ import { buildDatabaseFilter, buildSchemaFilter } from '../filters';
 import createLogger from '../logger';
 import { createCancelablePromise, versionCompare } from '../utils';
 import { Adapter, ADAPTERS } from './';
-import { AbstractAdapter, QueryArgs, QueryRowResult, TableKeysResult } from './abstract_adapter';
+import { AbstractAdapter, QueryArgs, QueryArrayRowResult, QueryRowResult, TableKeysResult } from './abstract_adapter';
 
 import type { Database } from '../database';
 import type { DatabaseFilter, SchemaFilter } from '../filters';
@@ -625,10 +625,14 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     };
   }
 
-  async executeQuery(queryText: string, connection?: pg.PoolClient): Promise<QueryRowResult[]> {
+  async executeQuery(queryText: string, connection?: pg.PoolClient): Promise<QueryArrayRowResult[]> {
     const commands = identifyCommands(queryText).map((item) => item.type);
 
-    const data = await this.driverExecuteQuery({ query: queryText, multiple: true }, connection);
+    const data = await this.driverExecuteQuery({
+      query: queryText,
+      multiple: true,
+      rowMode: 'array',
+    }, connection);
 
     return data
       .filter((result) => result.command !== null)
@@ -643,11 +647,12 @@ export default class PostgresqlAdapter extends AbstractAdapter {
     return result[0];
   }
 
-  driverExecuteQuery(queryArgs: QueryArgs, connection?: pg.PoolClient): Promise<pg.QueryResult[]> {
+  driverExecuteQuery(queryArgs: QueryArgs, connection?: pg.PoolClient): Promise<pg.QueryResult[] | pg.QueryArrayResult[]> {
     const runQuery = (connection: pg.PoolClient): Promise<pg.QueryResult[]> => {
       const args = {
         text: queryArgs.query,
         values: queryArgs.params,
+        rowMode: queryArgs.rowMode,
         multiResult: queryArgs.multiple,
       };
 
@@ -690,7 +695,7 @@ export function wrapIdentifier(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
-function parseRowQueryResult(data: pg.QueryResult, command: string): QueryRowResult {
+function parseRowQueryResult(data: pg.QueryArrayResult, command: string): QueryArrayRowResult {
   const isSelect = data.command === 'SELECT';
   return {
     command: command || data.command,

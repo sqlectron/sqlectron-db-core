@@ -872,11 +872,17 @@ describe('db', () => {
               expect(field('role_id')).to.exist;
               expect(field('createdat')).to.exist;
 
-              expect(result).to.have.nested.property('rows[0].id').to.eql(1);
-              expect(result).to.have.nested.property('rows[0].username').to.eql('maxcnunes');
-              expect(result).to.have.nested.property('rows[0].password').to.eql('123456');
-              expect(result).to.have.nested.property('rows[0].email').to.eql('maxcnunes@gmail.com');
-              expect(result).to.have.nested.property('rows[0].createdat');
+              expect(result).to.have.nested.property('rows');
+              const rows = result.rows;
+              expect(rows).to.have.lengthOf(1);
+              const row = (rows as unknown[][])[0];
+              expect(row).to.have.lengthOf(6);
+              expect(row[0]).to.eql(1);
+              expect(row[1]).to.eql('maxcnunes');
+              expect(row[2]).to.eql('maxcnunes@gmail.com');
+              expect(row[3]).to.eql('123456');
+              expect(row[4]).to.eql(1);
+              expect(row[4]).to.not.be.null;
 
               expect(result).to.have.property('command').to.eql('SELECT');
               expect(result).to.have.deep.property('rowCount').to.eql(1);
@@ -890,9 +896,28 @@ describe('db', () => {
                 const [result] = results;
 
                 expect(result).to.have.nested.property('fields[0].name').to.eql('createdat');
-                expect(result).to.have.nested.property('rows[0].createdat').to.match(/^2016-10-25/);
+                expect(result).to.have.nested.property('rows[0][0]').to.match(/^2016-10-25/);
               });
             }
+
+            it('should execute single query with duplicate column names', async () => {
+              const results = await dbConn.executeQuery('select 1 as foo, 2 as foo, 3 as bar');
+
+              expect(results).to.have.length(1);
+              const [result] = results;
+
+              expect(result).to.have.property('command').to.eql('SELECT');
+              expect(result).to.have.deep.property('rowCount').to.eql(1);
+
+              expect(result).to.have.nested.property('fields[0].name').to.eql('foo');
+              expect(result).to.have.nested.property('fields[1].name').to.eql('foo');
+              expect(result).to.have.nested.property('fields[2].name').to.eql('bar');
+
+              expect(result).to.have.nested.property('rows[0]').have.lengthOf(3);
+              expect(result).to.have.nested.property('rows[0][0]').to.eql(1);
+              expect(result).to.have.nested.property('rows[0][1]').to.eql(2);
+              expect(result).to.have.nested.property('rows[0][2]').to.eql(3);
+            });
 
             it('should execute multiple queries', async () => {
               try {
@@ -909,10 +934,10 @@ describe('db', () => {
                 expect(firstResult).to.have.nested.property('fields[2].name').to.eql('email');
                 expect(firstResult).to.have.nested.property('fields[3].name').to.eql('password');
 
-                expect(firstResult).to.have.nested.property('rows[0].id').to.eql(1);
-                expect(firstResult).to.have.nested.property('rows[0].username').to.eql('maxcnunes');
-                expect(firstResult).to.have.nested.property('rows[0].password').to.eql('123456');
-                expect(firstResult).to.have.nested.property('rows[0].email').to.eql('maxcnunes@gmail.com');
+                expect(firstResult).to.have.nested.property('rows[0][0]').to.eql(1);
+                expect(firstResult).to.have.nested.property('rows[0][1]').to.eql('maxcnunes');
+                expect(firstResult).to.have.nested.property('rows[0][2]').to.eql('maxcnunes@gmail.com');
+                expect(firstResult).to.have.nested.property('rows[0][3]').to.eql('123456');
 
                 expect(firstResult).to.have.property('command').to.eql('SELECT');
                 expect(firstResult).to.have.deep.property('rowCount').to.eql(1);
@@ -920,8 +945,8 @@ describe('db', () => {
                 expect(secondResult).to.have.nested.property('fields[0].name').to.eql('id');
                 expect(secondResult).to.have.nested.property('fields[1].name').to.eql('name');
 
-                expect(secondResult).to.have.nested.property('rows[0].id').to.eql(1);
-                expect(secondResult).to.have.nested.property('rows[0].name').to.eql('developer');
+                expect(secondResult).to.have.nested.property('rows[0][0]').to.eql(1);
+                expect(secondResult).to.have.nested.property('rows[0][1]').to.eql('developer');
 
                 expect(secondResult).to.have.property('command').to.eql('SELECT');
                 expect(secondResult).to.have.deep.property('rowCount').to.eql(1);

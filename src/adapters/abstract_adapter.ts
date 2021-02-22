@@ -12,11 +12,20 @@ export interface QueryArgs {
   query: string;
   params?: unknown[];
   multiple?: boolean;
+  rowMode?: 'array';
 }
 
 export interface QueryRowResult {
   command: string;
-  rows: unknown;
+  rows: {[key: string]: unknown}[];
+  fields: unknown;
+  rowCount?: number;
+  affectedRows?: number;
+}
+
+export interface QueryArrayRowResult {
+  command: string;
+  rows: unknown[][];
   fields: unknown;
   rowCount?: number;
   affectedRows?: number;
@@ -141,7 +150,7 @@ export abstract class AbstractAdapter {
 
   abstract query(queryText: string): QueryReturn;
 
-  abstract executeQuery(queryText: string): Promise<QueryRowResult[]>;
+  abstract executeQuery(queryText: string): Promise<QueryArrayRowResult[]>;
 
   abstract wrapIdentifier(value: string): string;
 }
