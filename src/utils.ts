@@ -96,7 +96,7 @@ export function identifyCommands(queryText: string): Result[] {
 }
 
 export function appendSemiColon(query: string): string {
-  let result = query.trimEnd()
+  let result = query.trim()
   if (result[result.length - 1] !== ';') {
     result += ';';
   }

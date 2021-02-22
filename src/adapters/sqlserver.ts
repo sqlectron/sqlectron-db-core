@@ -369,7 +369,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteSingleQuery<{ViewDefinition: string}>({ query: sql });
 
-    return data.map((row) => row.ViewDefinition.trim());
+    return data.map((row) => appendSemiColon(row.ViewDefinition));
   }
 
   async getRoutineCreateScript(routine: string): Promise<string[]> {
@@ -381,7 +381,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteSingleQuery<{routine_definition: string}>({ query: sql });
 
-    return data.map((row) => appendSemiColon(row.routine_definition.trim()));
+    return data.map((row) => appendSemiColon(row.routine_definition));
   }
 
   async truncateAllTables(): Promise<void> {
