@@ -399,7 +399,8 @@ describe('db', () => {
                 '  password varchar\\(45\\)  NULL,\\r\\n' +
                 '  role_id int  NULL,\\r\\n' +
                 '  createdat datetime  NULL,\\r\\n' +
-                '\\);\\r\\n\\r\\n' +
+                '\\);\\r\\n' +
+                '\\r\\n' +
                 'ALTER TABLE users ADD CONSTRAINT PK__users__[a-zA-Z0-9]+ PRIMARY KEY \\(id\\);'
               ));
             } else if (dbAdapter === 'sqlite') {
@@ -573,7 +574,7 @@ describe('db', () => {
           it('should return CREATE VIEW script', async () => {
             const [createScript] = await dbConn.getViewCreateScript('email_view');
             if (mysqlAdapters.includes(dbAdapter)) {
-              expect(createScript).to.contain([
+              expect(createScript).to.eql([
                 'VIEW `email_view`',
                 'AS select `users`.`email` AS `email`,`users`.`password` AS `password`',
                 'from `users`;',
@@ -615,7 +616,7 @@ describe('db', () => {
           it('should return CREATE PROCEDURE/FUNCTION script', async () => {
             const [createScript] = await dbConn.getRoutineCreateScript('users_count', 'Procedure');
             if (mysqlAdapters.includes(dbAdapter)) {
-              expect(createScript).to.contain('CREATE DEFINER=');
+              expect(createScript).to.eql('CREATE DEFINER=');
               expect(createScript).to.contain([
                 'PROCEDURE `users_count`()',
                 'BEGIN',
@@ -639,7 +640,7 @@ describe('db', () => {
                 '$$ LANGUAGE sql VOLATILE;',
               ].join('\n'));
             } else if (dbAdapter === 'sqlserver') {
-              expect(createScript).to.contain('CREATE PROCEDURE dbo.users_count');
+              expect(createScript).to.eql('CREATE PROCEDURE dbo.users_count');
               expect(createScript).to.contain('@Count int OUTPUT');
               expect(createScript).to.contain('SELECT @Count = COUNT(*) FROM dbo.users');
             } else if (dbAdapter === 'cassandra' || dbAdapter === 'sqlite') {
