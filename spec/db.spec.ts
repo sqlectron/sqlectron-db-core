@@ -353,7 +353,7 @@ describe('db', () => {
             const [createScript] = await dbConn.getTableCreateScript('users');
 
             if (dbAdapter === 'mysql' && versionCompare(dbConn.getVersion().version, '8') >= 0) {
-              expect(createScript).to.contain('CREATE TABLE `users` (\n' +
+              expect(createScript).to.eql('CREATE TABLE `users` (\n' +
               '  `id` int NOT NULL AUTO_INCREMENT,\n' +
               '  `username` varchar(45) DEFAULT NULL,\n' +
               '  `email` varchar(150) DEFAULT NULL,\n' +
@@ -363,9 +363,10 @@ describe('db', () => {
               '  PRIMARY KEY (`id`),\n' +
               '  KEY `role_id` (`role_id`),\n' +
               '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
-              ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci');
+              ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;');
             } else if (mysqlAdapters.includes(dbAdapter)) {
-              expect(createScript).to.contain('CREATE TABLE `users` (\n' +
+              const charset = dbAdapter === 'mariadb' && versionCompare(dbConn.getVersion().version, '10.1') > 0 ? 'utf8mb4' : 'latin1';
+              expect(createScript).to.eql('CREATE TABLE `users` (\n' +
                 '  `id` int(11) NOT NULL AUTO_INCREMENT,\n' +
                 '  `username` varchar(45) DEFAULT NULL,\n' +
                 '  `email` varchar(150) DEFAULT NULL,\n' +
@@ -375,9 +376,10 @@ describe('db', () => {
                 '  PRIMARY KEY (`id`),\n' +
                 '  KEY `role_id` (`role_id`),\n' +
                 '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
-              ') ENGINE=InnoDB');
+                `) ENGINE=InnoDB DEFAULT CHARSET=${charset};`);
             } else if (postgresAdapters.includes(dbAdapter)) {
-              expect(createScript).to.eql('CREATE TABLE public.users (\n' +
+              expect(createScript).to.eql(
+                'CREATE TABLE public.users (\n' +
                 '  id integer NOT NULL,\n' +
                 '  username text NOT NULL,\n' +
                 '  email text NOT NULL,\n' +
@@ -386,19 +388,21 @@ describe('db', () => {
                 '  createdat date NULL\n' +
                 ');\n' +
                 '\n' +
-                'ALTER TABLE public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id)',
+                'ALTER TABLE public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);',
               );
             } else if (dbAdapter === 'sqlserver') {
-              expect(createScript).to.contain('CREATE TABLE users (\r\n' +
-                '  id int IDENTITY(1,1) NOT NULL,\r\n' +
-                '  username varchar(45)  NULL,\r\n' +
-                '  email varchar(150)  NULL,\r\n' +
-                '  password varchar(45)  NULL,\r\n' +
-                '  role_id int  NULL,\r\n' +
-                '  createdat datetime  NULL,\r\n' +
-                ')\r\n');
-              expect(createScript).to.contain('ALTER TABLE users ADD CONSTRAINT PK__users');
-              expect(createScript).to.contain('PRIMARY KEY (id)');
+              expect(createScript).to.match(new RegExp(
+                'CREATE TABLE users \\(\\r\\n' +
+                '  id int IDENTITY\\(1,1\\) NOT NULL,\\r\\n' +
+                '  username varchar\\(45\\)  NULL,\\r\\n' +
+                '  email varchar\\(150\\)  NULL,\\r\\n' +
+                '  password varchar\\(45\\)  NULL,\\r\\n' +
+                '  role_id int  NULL,\\r\\n' +
+                '  createdat datetime  NULL,\\r\\n' +
+                '\\);\\r\\n' +
+                '\\r\\n' +
+                'ALTER TABLE users ADD CONSTRAINT PK__users__[a-zA-Z0-9]+ PRIMARY KEY \\(id\\);'
+              ));
             } else if (dbAdapter === 'sqlite') {
               expect(createScript).to.eql('CREATE TABLE users (\n' +
                 '  id INTEGER NOT NULL,\n' +
@@ -408,7 +412,8 @@ describe('db', () => {
                 '  role_id INT,\n' +
                 '  createdat DATETIME NULL,\n' +
                 '  PRIMARY KEY (id),\n' +
-                '  FOREIGN KEY (role_id) REFERENCES roles (id)\n)',
+                '  FOREIGN KEY (role_id) REFERENCES roles (id)\n' +
+                ');',
               );
             } else if (dbAdapter === 'cassandra') {
               expect(createScript).to.eql(undefined);
@@ -569,10 +574,11 @@ describe('db', () => {
           it('should return CREATE VIEW script', async () => {
             const [createScript] = await dbConn.getViewCreateScript('email_view');
             if (mysqlAdapters.includes(dbAdapter)) {
-              expect(createScript).to.contain([
+              expect(createScript).to.eql([
+                'CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER',
                 'VIEW `email_view`',
                 'AS select `users`.`email` AS `email`,`users`.`password` AS `password`',
-                'from `users`',
+                'from `users`;',
               ].join(' '));
             } else if (dbAdapter === 'postgresql') {
               expect(createScript).to.eql([
@@ -589,15 +595,15 @@ describe('db', () => {
               ].join('\n'));
             } else if (dbAdapter === 'sqlserver') {
               expect(createScript).to.eql([
-                '\nCREATE VIEW dbo.email_view AS',
+                'CREATE VIEW dbo.email_view AS',
                 'SELECT dbo.users.email, dbo.users.password',
-                'FROM dbo.users;\n',
+                'FROM dbo.users;',
               ].join('\n'));
             } else if (dbAdapter === 'sqlite') {
               expect(createScript).to.eql([
                 'CREATE VIEW email_view AS',
                 '  SELECT users.email, users.password',
-                '  FROM users',
+                '  FROM users;',
               ].join('\n'));
             } else if (dbAdapter === 'cassandra') {
               expect(createScript).to.eql(undefined);
@@ -611,12 +617,11 @@ describe('db', () => {
           it('should return CREATE PROCEDURE/FUNCTION script', async () => {
             const [createScript] = await dbConn.getRoutineCreateScript('users_count', 'Procedure');
             if (mysqlAdapters.includes(dbAdapter)) {
-              expect(createScript).to.contain('CREATE DEFINER=');
-              expect(createScript).to.contain([
-                'PROCEDURE `users_count`()',
+              expect(createScript).to.eql([
+                'CREATE DEFINER=`root`@`localhost` PROCEDURE `users_count`()',
                 'BEGIN',
                 '  SELECT COUNT(*) FROM users;',
-                'END',
+                'END;',
               ].join('\n'));
             } else if (dbAdapter === 'postgresql') {
               expect(createScript).to.eql([
@@ -625,19 +630,26 @@ describe('db', () => {
                 ' LANGUAGE sql',
                 'AS $function$',
                 '  SELECT COUNT(*) FROM users AS total;',
-                '$function$\n',
+                '$function$;',
               ].join('\n'));
             } else if (dbAdapter === 'redshift') {
               expect(createScript).to.eql([
                 'CREATE OR REPLACE FUNCTION public.users_count()',
                 '  RETURNS bigint AS $$',
                 '  SELECT COUNT(*) FROM users AS total;',
-                '$$ LANGUAGE sql VOLATILE',
+                '$$ LANGUAGE sql VOLATILE;',
               ].join('\n'));
             } else if (dbAdapter === 'sqlserver') {
-              expect(createScript).to.contain('CREATE PROCEDURE dbo.users_count');
-              expect(createScript).to.contain('@Count int OUTPUT');
-              expect(createScript).to.contain('SELECT @Count = COUNT(*) FROM dbo.users');
+              expect(createScript).to.eql([
+                'CREATE PROCEDURE dbo.users_count',
+                '(',
+                '  @Count int OUTPUT',
+                ')',
+                'AS',
+                '  BEGIN',
+                '    SELECT @Count = COUNT(*) FROM dbo.users',
+                '  END;'
+              ].join('\n'));
             } else if (dbAdapter === 'cassandra' || dbAdapter === 'sqlite') {
               expect(createScript).to.eql(undefined);
             } else {

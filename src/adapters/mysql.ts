@@ -2,7 +2,7 @@ import mysql from 'mysql2';
 import { identify } from 'sql-query-identifier';
 
 import createLogger from '../logger';
-import { createCancelablePromise } from '../utils';
+import { appendSemiColon, createCancelablePromise } from '../utils';
 import { AbstractAdapter } from './abstract_adapter';
 
 import type { Result } from 'sql-query-identifier';
@@ -388,7 +388,7 @@ export default class MysqlAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row['Create Table'] as string);
+    return (<mysql.RowDataPacket[]>data).map((row) => appendSemiColon(row['Create Table'] as string));
   }
 
   async getViewCreateScript(view: string): Promise<string[]> {
@@ -396,7 +396,7 @@ export default class MysqlAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row['Create View'] as string);
+    return (<mysql.RowDataPacket[]>data).map((row) => appendSemiColon(row['Create View'] as string));
   }
 
   async getRoutineCreateScript(routine: string, type: string): Promise<string[]> {
@@ -404,7 +404,7 @@ export default class MysqlAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteQuery({ query: sql });
 
-    return (<mysql.RowDataPacket[]>data).map((row) => row[`Create ${type}`] as string);
+    return (<mysql.RowDataPacket[]>data).map((row) => appendSemiColon(row[`Create ${type}`] as string));
   }
 
   async getSchema(connection?: mysql.PoolConnection): Promise<string> {

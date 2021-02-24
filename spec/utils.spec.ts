@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { versionCompare } from '../src/utils';
+import { appendSemiColon, versionCompare } from '../src/utils';
 
 describe('utils', () => {
   describe('.versionCompare', () => {
@@ -22,5 +22,21 @@ describe('utils', () => {
         expect(versionCompare(versionA, versionB)).to.be.eql(expected);
       });
     });
+  });
+
+  describe('.appendSemiColon', () => {
+    const parameters: [string][] = [
+      ['test'],
+      ['test;'],
+      ['\ntest'],
+      ['test\n'],
+      ['\ntest\n'],
+      ['\ntest;\n'],
+    ];
+    parameters.forEach(([inputString]) => {
+      it(`.appendSemiColon(${JSON.stringify(inputString)}) === 'test;'`, () => {
+        expect(appendSemiColon(inputString)).to.eql('test;');
+      });
+    })
   });
 });

@@ -3,7 +3,7 @@ import { identify } from 'sql-query-identifier';
 
 import { buildDatabaseFilter, buildSchemaFilter } from '../filters';
 import createLogger from '../logger';
-import { createCancelablePromise, versionCompare } from '../utils';
+import { appendSemiColon, createCancelablePromise, versionCompare } from '../utils';
 import { Adapter, ADAPTERS } from './';
 import { AbstractAdapter, QueryArgs, QueryRowResult, TableKeysResult } from './abstract_adapter';
 
@@ -398,7 +398,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
       params,
     })).rows[0];
     if (constraintResult.constraint.length > 0) {
-      createTable += `\n${constraintResult.constraint}`;
+      createTable += `\n${constraintResult.constraint};`;
     }
     return [createTable];
   }
@@ -430,7 +430,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
         WHERE proname = $1
         AND n.nspname = $2
       `;
-      mapFunction = (row: {[column: string]: unknown}): string => row.pg_get_functiondef as string;
+      mapFunction = (row: {[column: string]: unknown}): string => appendSemiColon(row.pg_get_functiondef as string);
     } else {
       // -- pg_catalog.array_to_string(p.proacl, '\n') AS "Access privileges",
       sql = `
@@ -477,7 +477,7 @@ export default class PostgresqlAdapter extends AbstractAdapter {
             (val: string, idx: number) => `${(row.proargnames as string[])[idx]} ${val}`
           ).join(', ');
         }
-        return `CREATE OR REPLACE FUNCTION ${row.nspname as string}.${row.proname as string}(${args})\n  RETURNS ${row.prorettype as string} AS $$${row.prosrc as string}$$ LANGUAGE ${row.lanname as string} ${row.provolatility as string}`;
+        return `CREATE OR REPLACE FUNCTION ${row.nspname as string}.${row.proname as string}(${args})\n  RETURNS ${row.prorettype as string} AS $$${row.prosrc as string}$$ LANGUAGE ${row.lanname as string} ${row.provolatility as string};`;
       };
     }
 

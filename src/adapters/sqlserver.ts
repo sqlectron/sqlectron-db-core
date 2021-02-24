@@ -2,7 +2,7 @@ import { ConnectionPool } from 'mssql';
 
 import { buildDatabaseFilter, buildSchemaFilter } from '../filters';
 import createLogger from '../logger';
-import { identifyCommands } from '../utils';
+import { identifyCommands, appendSemiColon } from '../utils';
 import { AbstractAdapter, QueryArgs, QueryRowResult } from './abstract_adapter';
 
 import type { config, Request, IResult, IRecordSet } from 'mssql';
@@ -298,11 +298,11 @@ export default class SqlServerAdapter extends AbstractAdapter {
     const sql = `
       SELECT  ('CREATE TABLE ' + so.name + ' (' +
         CHAR(13)+CHAR(10) + REPLACE(o.list, '&#x0D;', CHAR(13)) +
-        ')' + CHAR(13)+CHAR(10) +
+        ');' + CHAR(13)+CHAR(10) +
         CASE WHEN tc.constraint_name IS NULL THEN ''
              ELSE + CHAR(13)+CHAR(10) + 'ALTER TABLE ' + so.Name +
              ' ADD CONSTRAINT ' + tc.constraint_name  +
-             ' PRIMARY KEY ' + '(' + LEFT(j.list, Len(j.list)-1) + ')'
+             ' PRIMARY KEY ' + '(' + LEFT(j.list, Len(j.list)-1) + ');'
         END) AS createtable
       FROM sysobjects so
       CROSS APPLY
@@ -369,7 +369,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteSingleQuery<{ViewDefinition: string}>({ query: sql });
 
-    return data.map((row) => row.ViewDefinition);
+    return data.map((row) => appendSemiColon(row.ViewDefinition));
   }
 
   async getRoutineCreateScript(routine: string): Promise<string[]> {
@@ -381,7 +381,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteSingleQuery<{routine_definition: string}>({ query: sql });
 
-    return data.map((row) => row.routine_definition);
+    return data.map((row) => appendSemiColon(row.routine_definition));
   }
 
   async truncateAllTables(): Promise<void> {
