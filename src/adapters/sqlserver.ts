@@ -361,7 +361,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
     const { data } = await this.driverExecuteSingleQuery<{createtable: string}>({ query: sql });
 
-    return data.map((row) => row.createtable);
+    return data.map((row) => row.createtable.replace(/\r\n/g, '\n'));
   }
 
   async getViewCreateScript(view: string): Promise<string[]> {
