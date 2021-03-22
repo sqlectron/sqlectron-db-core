@@ -5,7 +5,8 @@
 
 The common code used by all sqlectron clients.
 
-> Requires node 10 or higher.
+> Requires node v10 or higher.
+> For ed25519 ssh support it requires node v12.
 
 ## How to pronounce
 
@@ -34,8 +35,8 @@ npm install sqlectron-db-core
 ## Example Usage
 
 ```javascript
-serverSession = db.createServer(serverInfo);
-dbConn = serverSession.createConnection(serverInfo.database);
+const serverSession = db.createServer(serverInfo);
+const dbConn = serverSession.createConnection(serverInfo.database);
 dbConn.connect().then(() => {
   console.log(dbConn.executeQuery('SELECT 1'));
 })

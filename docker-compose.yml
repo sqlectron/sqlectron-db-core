@@ -2,6 +2,7 @@ version: '3'
 
 services:
   mysql:
+    container_name: mysql
     image: mysql:5.7
     ports:
       - 3306:3306
@@ -48,18 +49,45 @@ services:
     ports:
       - 7000 # cluster
       - 9042 # native
+    ports:
+      - 9042:9042
 
   test:
-    image: node:10.15.0
+    image: node:10.24.0
     command: npm test
     working_dir: /usr/src/app
     environment:
       DB_ADAPTERS: mysql,postgresql,cassandra
       MYSQL_ENV_MYSQL_USER: root
       MYSQL_ENV_MYSQL_PASSWORD: password
+      MYSQL_HOST: mysql
+      MARIADB_HOST: mariadb
+      POSTGRES_HOST: postgres
+      CASSANDRA_HOST: cassandra
+      REDSHIFT_HOST: redshift
+      SSH_HOST: openssh-server
     volumes:
       - .:/usr/src/app
-    links:
-      - mysql:mysql
-      - postgres:postgres
-      - cassandra:cassandra
+      - /usr/src/app/node_modules
+    depends_on:
+      - mysql
+      - postgres
+      - cassandra
+      - openssh-server
+
+  openssh-server:
+    container_name: openssh-server
+    image: ghcr.io/linuxserver/openssh-server
+    environment:
+      DOCKER_MODS: linuxserver/mods:openssh-server-ssh-tunnel
+      PASSWORD_ACCESS: 'true'
+      USER_NAME: sqlectron
+      USER_PASSWORD: password
+      PUBLIC_KEY_DIR: /ssh_files/pub
+    ports:
+      - 2222:2222
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    volumes:
+      - ./spec/ssh_files:/ssh_files

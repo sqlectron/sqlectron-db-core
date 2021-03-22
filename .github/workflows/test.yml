@@ -56,6 +56,9 @@ jobs:
     - name: Create SQLServer Container
       run: docker run --rm -d --name sqlserver -p 1433:1433 -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Password12!" -e "MSSQL_COLLATION=${{ matrix.sqlserver-collation }}" -v ${GITHUB_WORKSPACE}/spec/databases/sqlserver/schema:/docker-entrypoint-initdb.d mcr.microsoft.com/mssql/server:2017-latest
 
+    - name: Create OpenSSH-Server Container
+      run: docker run --rm -d --name openssh-server -p 2222:2222 -e "DOCKER_MODS=linuxserver/mods:openssh-server-ssh-tunnel" -e "PASSWORD_ACCESS=true" -e "USER_NAME=sqlectron" -e "USER_PASSWORD=password" -e "PUBLIC_KEY_DIR=/ssh_files/pub" -v ${GITHUB_WORKSPACE}/spec/ssh_files:/ssh_files ghcr.io/linuxserver/openssh-server
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -63,10 +66,6 @@ jobs:
     - run: npm install -g npm
 
     - run: npm ci
-      if: matrix.node-version != '12.x'
-
-    - run: npm ci --build-from-source
-      if: matrix.node-version == '12.x'
 
     - run: npm run lint
     - run: npm run compile
@@ -80,4 +79,7 @@ jobs:
     - name: Initialize SQLServer Schema
       run: docker exec -i sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P Password12! -i /docker-entrypoint-initdb.d/schema.sql -d "sqlectron"
 
-    - run: npm run test:coverage
+    - name: test
+      run: |
+        source ./scripts/env-docker-hosts.sh
+        npm run test:coverage
