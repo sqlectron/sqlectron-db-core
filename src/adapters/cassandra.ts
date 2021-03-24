@@ -12,13 +12,13 @@ declare module 'cassandra-driver' {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace metadata {
     interface Metadata {
-      keyspaces: { [name: string]: { name: string, strategy: string }};
+      keyspaces: { [name: string]: { name: string; strategy: string } };
     }
   }
 }
 
 interface Config {
-  contactPoints: (string)[];
+  contactPoints: string[];
   protocolOptions: {
     port?: number;
   };
@@ -106,7 +106,7 @@ export default class CassandraAdapter extends AbstractAdapter {
     });
   }
 
-  listTables(): Promise<{name: string}[]> {
+  listTables(): Promise<{ name: string }[]> {
     return new Promise((resolve, reject) => {
       let sql;
       if (this.version.version[0] === '2') {
@@ -131,10 +131,14 @@ export default class CassandraAdapter extends AbstractAdapter {
     });
   }
 
-  listTableColumns(table: string): Promise<{
-    columnName: string;
-    dataType: string
-  }[]> {
+  listTableColumns(
+    table: string,
+  ): Promise<
+    {
+      columnName: string;
+      dataType: string;
+    }[]
+  > {
     const cassandra2 = this.version.version[0] === '2';
     return new Promise((resolve, reject) => {
       let sql;
@@ -153,10 +157,7 @@ export default class CassandraAdapter extends AbstractAdapter {
             AND table_name = ?
         `;
       }
-      const params = [
-        this.database.database,
-        table,
-      ];
+      const params = [this.database.database, table];
       this.client.execute(sql, params, (err, data) => {
         if (err) return reject(err);
         resolve(
@@ -164,11 +165,14 @@ export default class CassandraAdapter extends AbstractAdapter {
             // force pks be placed at the results beginning
             .sort((a, b) => {
               if (cassandra2) {
-                return (+(a.position > b.position) || -(a.position < b.position));
+                return +(a.position > b.position) || -(a.position < b.position);
               }
               return b.position - a.position;
-            }).map((row) => {
-              const rowType = cassandra2 ? mapLegacyDataTypes(row.type as string) : row.type as string;
+            })
+            .map((row) => {
+              const rowType = cassandra2
+                ? mapLegacyDataTypes(row.type as string)
+                : (row.type as string);
               return {
                 columnName: row.column_name as string,
                 dataType: rowType,
@@ -179,30 +183,37 @@ export default class CassandraAdapter extends AbstractAdapter {
     });
   }
 
-  getTableKeys(table: string): Promise<{
-    constraintName: null;
-    columnName: string;
-    referencedTable: null;
-    keyType: string;
-  }[]> {
+  getTableKeys(
+    table: string,
+  ): Promise<
+    {
+      constraintName: null;
+      columnName: string;
+      referencedTable: null;
+      keyType: string;
+    }[]
+  > {
     return new Promise((resolve, reject) => {
       if (this.database.database === undefined) {
         return [];
       }
-      this.client.metadata
-      .getTable(this.database.database, table, (err: Error, tableInfo: {partitionKeys: {name: string}[]}) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve(tableInfo
-          .partitionKeys
-          .map((key: {name: string}) => ({
-            constraintName: null,
-            columnName: key.name,
-            referencedTable: null,
-            keyType: 'PRIMARY KEY',
-          })));
-      });
+      this.client.metadata.getTable(
+        this.database.database,
+        table,
+        (err: Error, tableInfo: { partitionKeys: { name: string }[] }) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(
+            tableInfo.partitionKeys.map((key: { name: string }) => ({
+              constraintName: null,
+              columnName: key.name,
+              referencedTable: null,
+              keyType: 'PRIMARY KEY',
+            })),
+          );
+        },
+      );
     });
   }
 
@@ -287,7 +298,7 @@ function parseRowQueryResult(data: cassandra.types.ResultSet, command: string): 
     command: command || <string>(isSelect && 'SELECT'),
     rows: data.rows || [],
     fields: data.columns || [],
-    rowCount: isSelect ? (data.rowLength || 0) : undefined,
+    rowCount: isSelect ? data.rowLength || 0 : undefined,
     affectedRows: !isSelect && !isNaN(data.rowLength) ? data.rowLength : undefined,
   };
 }

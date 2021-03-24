@@ -38,6 +38,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    # ------------------------------
+    # -- Setup environment for tests
+    # ------------------------------
     - name: Create MySQL Container
       run: docker run --rm -d --name mysql -e "MYSQL_ROOT_PASSWORD=Password12!" -e "MYSQL_DATABASE=sqlectron" -p 3306:3306 -v ${GITHUB_WORKSPACE}/spec/databases/mysql/schema:/docker-entrypoint-initdb.d mysql:${{ matrix.mysql-version }}
 
@@ -68,6 +71,8 @@ jobs:
     - run: npm ci
 
     - run: npm run lint
+    - run: npm run format:check
+
     - run: npm run compile
 
     # Set-up containers that do not support initialization sequences
@@ -79,6 +84,9 @@ jobs:
     - name: Initialize SQLServer Schema
       run: docker exec -i sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P Password12! -i /docker-entrypoint-initdb.d/schema.sql -d "sqlectron"
 
+    # ----------------------------
+    # -- Run Tests
+    # ----------------------------
     - name: test
       run: |
         source ./scripts/env-docker-hosts.sh

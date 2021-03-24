@@ -10,7 +10,7 @@ import type { Server } from '../server';
 export interface Adapter {
   key: string;
   name: string;
-  adapter: typeof AbstractAdapter,
+  adapter: typeof AbstractAdapter;
   defaultPort?: number;
   defaultDatabase?: string;
   disabledFeatures: string[];
@@ -25,20 +25,14 @@ export const ADAPTERS: Adapter[] = [
     name: 'MySQL',
     adapter: MysqlAdapter,
     defaultPort: 3306,
-    disabledFeatures: [
-      'server:schema',
-      'server:domain',
-    ],
+    disabledFeatures: ['server:schema', 'server:domain'],
   },
   {
     key: 'mariadb',
     name: 'MariaDB',
     adapter: MysqlAdapter,
     defaultPort: 3306,
-    disabledFeatures: [
-      'server:schema',
-      'server:domain',
-    ],
+    disabledFeatures: ['server:schema', 'server:domain'],
   },
   {
     key: 'postgresql',
@@ -46,9 +40,7 @@ export const ADAPTERS: Adapter[] = [
     adapter: PostgresqlAdapter,
     defaultDatabase: 'postgres',
     defaultPort: 5432,
-    disabledFeatures: [
-      'server:domain',
-    ],
+    disabledFeatures: ['server:domain'],
   },
   {
     key: 'redshift',
@@ -56,9 +48,7 @@ export const ADAPTERS: Adapter[] = [
     adapter: PostgresqlAdapter,
     defaultDatabase: 'postgres',
     defaultPort: 5432,
-    disabledFeatures: [
-      'server:domain',
-    ],
+    disabledFeatures: ['server:domain'],
   },
   {
     key: 'sqlserver',
@@ -111,13 +101,14 @@ export function registerAdapter(adapter: Adapter): void {
 export function adapterFactory(
   adapterKey: string,
   server: Server,
-  database: Database
+  database: Database,
 ): AbstractAdapter {
   const adapter = ADAPTERS.find((a) => a.key === adapterKey);
   if (!adapter) {
     throw new Error(`Unknown requested adapter: ${adapterKey}`);
   }
-  return new (
-    adapter.adapter as {new(server: Server, database: Database): AbstractAdapter}
-  )(server, database);
+  return new (adapter.adapter as { new (server: Server, database: Database): AbstractAdapter })(
+    server,
+    database,
+  );
 }

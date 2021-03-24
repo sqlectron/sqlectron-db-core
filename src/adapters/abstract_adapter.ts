@@ -46,7 +46,7 @@ export interface TableKeysResult {
   referencedTable: string | null;
 }
 
-export type QueryReturn = {execute: () => Promise<QueryRowResult[]>, cancel: () => void};
+export type QueryReturn = { execute: () => Promise<QueryRowResult[]>; cancel: () => void };
 
 export abstract class AbstractAdapter {
   readonly server;
@@ -92,7 +92,7 @@ export abstract class AbstractAdapter {
     return Promise.resolve([]);
   }
 
-  abstract listTableColumns(table: string, schema?: string): Promise<ListTableColumnsResult[]>
+  abstract listTableColumns(table: string, schema?: string): Promise<ListTableColumnsResult[]>;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   listTableTriggers(table: string, schema?: string): Promise<string[]> {

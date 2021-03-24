@@ -1,0 +1,8 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run linters
+npx --no-install lint-staged
+
+# TODO: Enable test run once we have it scoped by unit tests
+# npm run test:unit

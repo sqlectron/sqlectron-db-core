@@ -37,6 +37,6 @@ describe('utils', () => {
       it(`.appendSemiColon(${JSON.stringify(inputString)}) === 'test;'`, () => {
         expect(appendSemiColon(inputString)).to.eql('test;');
       });
-    })
+    });
   });
 });

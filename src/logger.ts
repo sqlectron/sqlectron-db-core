@@ -5,11 +5,15 @@ export interface Logger {
   error: (msg: string, ...params: unknown[]) => void;
 }
 
-const loggers: {[key: string]: Logger} = {};
+const loggers: { [key: string]: Logger } = {};
 
 export default function createLogger(namespace: string): () => Logger {
-  if (!namespace) { throw new Error('Missing log namespace'); }
-  if (loggers[namespace]) { throw new Error('This logger is already registered'); }
+  if (!namespace) {
+    throw new Error('Missing log namespace');
+  }
+  if (loggers[namespace]) {
+    throw new Error('This logger is already registered');
+  }
 
   // default logger
   const debugLogger = debug(`sqlectron-core:${namespace}`);

@@ -4,15 +4,15 @@
 
 There are some ways of contributing to Sqlectron
 
-* Report an issue
-* Development
+- Report an issue
+- Development
 
 ## Report an issue
 
-* Before opening the issue make sure there isn't an issue opened for the same problem
-* Include the database client you were using during the error (mysql, postgres, etc.)
-* Include the version of sqlectron-core you are using
-* Include the stack trace error
+- Before opening the issue make sure there isn't an issue opened for the same problem
+- Include the database client you were using during the error (mysql, postgres, etc.)
+- Include the version of sqlectron-core you are using
+- Include the stack trace error
 
 ## Development
 

@@ -14,13 +14,13 @@ It is pronounced "sequelectron" - https://translate.google.com/?source=osdd#en/e
 
 ## Current supported databases
 
-* [PostgreSQL](http://www.postgresql.org/)
-* [Redshift](https://aws.amazon.com/redshift/)
-* [MySQL](https://www.mysql.com/)
-* [MariaDB](https://mariadb.org/)
-* [Microsoft SQL Server](http://www.microsoft.com/en-us/server-cloud/products/sql-server/)
-* [Cassandra](http://cassandra.apache.org/) (NoSQL; [Exceptions about this client](https://github.com/sqlectron/sqlectron-core/releases/tag/v6.3.0))
-* [SQLite](https://sqlite.org/)
+- [PostgreSQL](http://www.postgresql.org/)
+- [Redshift](https://aws.amazon.com/redshift/)
+- [MySQL](https://www.mysql.com/)
+- [MariaDB](https://mariadb.org/)
+- [Microsoft SQL Server](http://www.microsoft.com/en-us/server-cloud/products/sql-server/)
+- [Cassandra](http://cassandra.apache.org/) (NoSQL; [Exceptions about this client](https://github.com/sqlectron/sqlectron-core/releases/tag/v6.3.0))
+- [SQLite](https://sqlite.org/)
 
 Do you want to support another SQL database? Please follow [these steps](/CONTRIBUTING.md#adding-a-new-client).
 
@@ -39,26 +39,26 @@ const serverSession = db.createServer(serverInfo);
 const dbConn = serverSession.createConnection(serverInfo.database);
 dbConn.connect().then(() => {
   console.log(dbConn.executeQuery('SELECT 1'));
-})
+});
 ```
 
 Where serverInfo is an array with the following fields:
 
-* `id`: in case including a new server manually there is no need setting an id field because SQLECTRON will do it for you
-* `name`
-* `client`: `postgresql`, `mysql` or `sqlserver`
-* `host`
-* `port`
-* `user`
-* `password`
-* `database`
-* `ssh`
-  * `host`
-  * `user`
-  * `port`
-  * `privateKey`
-  * `privateKeyWithPassphrase`
-* `ssl`
+- `id`: in case including a new server manually there is no need setting an id field because SQLECTRON will do it for you
+- `name`
+- `client`: `postgresql`, `mysql` or `sqlserver`
+- `host`
+- `port`
+- `user`
+- `password`
+- `database`
+- `ssh`
+  - `host`
+  - `user`
+  - `port`
+  - `privateKey`
+  - `privateKeyWithPassphrase`
+- `ssl`
 
 ## Contributing
 

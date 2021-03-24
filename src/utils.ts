@@ -25,10 +25,12 @@ export function resolveHomePathToAbsolute(filename: string): string {
   return path.join(homedir(), filename.substring(2));
 }
 
-export function createCancelablePromise(timeIdle = 100): {
-  wait: () => Promise<void>,
-  cancel: () => void,
-  discard: () => void
+export function createCancelablePromise(
+  timeIdle = 100,
+): {
+  wait: () => Promise<void>;
+  cancel: () => void;
+  discard: () => void;
 } {
   let canceled = false;
   let discarded = false;
@@ -86,7 +88,7 @@ export function identifyCommands(queryText: string): Result[] {
 }
 
 export function appendSemiColon(query: string): string {
-  let result = query.trim()
+  let result = query.trim();
   if (result[result.length - 1] !== ';') {
     result += ';';
   }

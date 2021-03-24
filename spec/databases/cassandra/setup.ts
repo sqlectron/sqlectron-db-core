@@ -4,7 +4,7 @@ import cassandra from 'cassandra-driver';
 
 type ResultSet = cassandra.types.ResultSet;
 
-export default function run(config: {host: string}): void {
+export default function run(config: { host: string }): void {
   before(async () => {
     const client = new cassandra.Client({
       contactPoints: [config.host],
@@ -19,11 +19,7 @@ export default function run(config: {host: string}): void {
   });
 }
 
-
-function executeQuery(
-  client: cassandra.Client,
-  query: string
-): Promise<ResultSet> {
+function executeQuery(client: cassandra.Client, query: string): Promise<ResultSet> {
   return new Promise((resolve, reject) => {
     client.execute(query, (err, data) => {
       if (err) {

@@ -6,10 +6,12 @@ const postgres = new ConnectionString(process.env.POSTGRES_DSN, {
   user: 'postgres',
   password: 'Password12!',
   path: ['sqlectron'],
-  hosts: [{
-    name: process.env.POSTGRES_HOST || '127.0.0.1',
-    port: parseInt(process.env.POSTGRES_PORT as string, 10)
-  }],
+  hosts: [
+    {
+      name: process.env.POSTGRES_HOST || '127.0.0.1',
+      port: parseInt(process.env.POSTGRES_PORT as string, 10),
+    },
+  ],
 });
 
 const redshift = new ConnectionString(process.env.REDSHIFT_DSN, {
@@ -17,10 +19,12 @@ const redshift = new ConnectionString(process.env.REDSHIFT_DSN, {
   user: 'postgres',
   password: 'Password12!',
   path: ['sqlectron'],
-  hosts: [{
-    name: process.env.REDSHIFT_HOST || '127.0.0.1',
-    port: parseInt(process.env.REDSHIFT_PORT as string, 10)
-  }],
+  hosts: [
+    {
+      name: process.env.REDSHIFT_HOST || '127.0.0.1',
+      port: parseInt(process.env.REDSHIFT_PORT as string, 10),
+    },
+  ],
 });
 
 const mysql = new ConnectionString(process.env.MYSQL_DSN, {
@@ -28,20 +32,24 @@ const mysql = new ConnectionString(process.env.MYSQL_DSN, {
   user: 'root',
   password: 'Password12!',
   path: ['sqlectron'],
-  hosts: [{
-    name: process.env.MYSQL_HOST || 'localhost',
-    port: parseInt(process.env.MYSQL_PORT as string, 10)
-  }],
+  hosts: [
+    {
+      name: process.env.MYSQL_HOST || 'localhost',
+      port: parseInt(process.env.MYSQL_PORT as string, 10),
+    },
+  ],
 });
 
 const mariadb = new ConnectionString(process.env.MARIADB_DSN, {
   user: 'root',
   password: 'Password12!',
   path: ['sqlectron'],
-  hosts: [{
-    name: process.env.MARIADB_HOST || 'localhost',
-    port: parseInt(process.env.MARIADB_PORT as string, 10)
-  }],
+  hosts: [
+    {
+      name: process.env.MARIADB_HOST || 'localhost',
+      port: parseInt(process.env.MARIADB_PORT as string, 10),
+    },
+  ],
 });
 
 const sqlserver = new ConnectionString(process.env.SQLSERVER_DSN, {
@@ -49,19 +57,23 @@ const sqlserver = new ConnectionString(process.env.SQLSERVER_DSN, {
   user: 'sa',
   password: 'Password12!',
   path: ['sqlectron'],
-  hosts: [{
-    name: process.env.SQLSERVER_HOST || 'localhost',
-    port: parseInt(process.env.SQLSERVER_PORT as string, 10)
-  }],
+  hosts: [
+    {
+      name: process.env.SQLSERVER_HOST || 'localhost',
+      port: parseInt(process.env.SQLSERVER_PORT as string, 10),
+    },
+  ],
 });
 
 const cassandra = new ConnectionString(process.env.CASSANDRA_DSN, {
   protocol: 'cassandra',
   path: ['sqlectron'],
-  hosts: [{
-    name: process.env.CASSANDRA_HOST || 'localhost',
-    port: parseInt(process.env.CASSANDRA_PORT as string, 10)
-  }],
+  hosts: [
+    {
+      name: process.env.CASSANDRA_HOST || 'localhost',
+      port: parseInt(process.env.CASSANDRA_PORT as string, 10),
+    },
+  ],
 });
 
 const dbs = {
@@ -96,7 +108,7 @@ const dbs = {
     password: mariadb.password,
     database: mariadb.path?.[0],
   },
-  sqlserver:  {
+  sqlserver: {
     host: sqlserver.hostname,
     port: sqlserver.port || 1433,
     user: sqlserver.user,
