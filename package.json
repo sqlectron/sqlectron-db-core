@@ -41,7 +41,6 @@
     "mssql": "^6.2.1",
     "mysql2": "^2.2.0",
     "pg": "^8.5.1",
-    "portfinder": "^1.0.28",
     "sql-query-identifier": "^2.0.0",
     "sqlite3": "^5.0.2",
     "ssh2": "^0.8.9"
