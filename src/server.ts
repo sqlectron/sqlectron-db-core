@@ -22,6 +22,7 @@ export interface LegacyServerConfig {
     privateKey?: string;
     host: string;
     port: number;
+    useAgent?: boolean;
   };
   ssl?:
     | {

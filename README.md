@@ -57,7 +57,8 @@ Where serverInfo is an array with the following fields:
   - `user`
   - `port`
   - `privateKey`
-  - `privateKeyWithPassphrase`
+  - `passphrase`
+  - `useAgent`
 - `ssl`
 
 ## Contributing
