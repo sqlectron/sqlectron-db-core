@@ -124,7 +124,30 @@ describe('db', () => {
           : describe;
 
         describeSSH('connect with ssh', () => {
-          const sshHost = process.env.SSH_HOST || 'localhost';
+          let serverInfo = {} as ServerConfig;
+
+          beforeEach(() => {
+            serverInfo = {
+              ...config[dbAdapter],
+              name: dbAdapter,
+              adapter: dbAdapter,
+              ssh: {
+                host: process.env.SSH_HOST || 'localhost',
+                port: 2222,
+                user: 'sqlectron',
+              },
+            };
+
+            // Must use the container name and the internal port
+            // in order to properly be able to connect the openssh-server container
+            // when the connection is being forward through the ssh session
+            serverInfo.host = dbAdapter;
+            if (dbAdapter === 'mariadb') {
+              serverInfo.port = 3306;
+            } else if (dbAdapter === 'redshift') {
+              serverInfo.port = 5432;
+            }
+          });
 
           const assertSSHConnection = async (dbConn: Database) => {
             await dbConn.connect();
@@ -136,18 +159,8 @@ describe('db', () => {
           };
 
           it('should connect into server using ssh with password', () => {
-            const serverInfo: ServerConfig = {
-              ...config[dbAdapter],
-              name: dbAdapter,
-              adapter: dbAdapter,
-            };
-
-            serverInfo.ssh = {
-              host: sshHost,
-              port: 2222,
-              user: 'sqlectron',
-              password: 'password',
-            };
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            serverInfo.ssh!.password = 'password';
 
             const serverSession = db.createServer(serverInfo);
             const dbConn = serverSession.createConnection(database);
@@ -159,18 +172,8 @@ describe('db', () => {
 
           for (const keyType of keyTypes) {
             it(`should connect into server using ssh with private key of type ${keyType}`, () => {
-              const serverInfo: ServerConfig = {
-                ...config[dbAdapter],
-                name: dbAdapter,
-                adapter: dbAdapter,
-              };
-
-              serverInfo.ssh = {
-                host: sshHost,
-                port: 2222,
-                user: 'sqlectron',
-                privateKey: path.join(__dirname, 'ssh_files/id_' + keyType),
-              };
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              serverInfo.ssh!.privateKey = path.join(__dirname, 'ssh_files/id_' + keyType);
 
               const serverSession = db.createServer(serverInfo);
               const dbConn = serverSession.createConnection(database);
@@ -188,18 +191,8 @@ describe('db', () => {
 
           describe('given ssh-agent is not running', () => {
             it('should fail to connect into server using ssh agent', () => {
-              const serverInfo: ServerConfig = {
-                ...config[dbAdapter],
-                name: dbAdapter,
-                adapter: dbAdapter,
-              };
-
-              serverInfo.ssh = {
-                host: sshHost,
-                port: 2222,
-                user: 'sqlectron',
-                useAgent: true,
-              };
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              serverInfo.ssh!.useAgent = true;
 
               const serverSession = db.createServer(serverInfo);
               const dbConn = serverSession.createConnection(database);
@@ -238,18 +231,8 @@ describe('db', () => {
                 execSync(`chmod 400 ${privateKey}`);
                 execSync(`ssh-add ${privateKey}`);
 
-                const serverInfo: ServerConfig = {
-                  ...config[dbAdapter],
-                  name: dbAdapter,
-                  adapter: dbAdapter,
-                };
-
-                serverInfo.ssh = {
-                  host: sshHost,
-                  port: 2222,
-                  user: 'sqlectron',
-                  useAgent: true,
-                };
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                serverInfo.ssh!.useAgent = true;
 
                 const serverSession = db.createServer(serverInfo);
                 const dbConn = serverSession.createConnection(database);
@@ -267,19 +250,10 @@ describe('db', () => {
           });
 
           it('should connect into server using ssh agent with passphrase', () => {
-            const serverInfo: ServerConfig = {
-              ...config[dbAdapter],
-              name: dbAdapter,
-              adapter: dbAdapter,
-            };
-
-            serverInfo.ssh = {
-              host: sshHost,
-              port: 2222,
-              user: 'sqlectron',
-              passphrase: 'password',
-              privateKey: path.join(__dirname, 'ssh_files/id_rsa_passphrase'),
-            };
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            serverInfo.ssh!.privateKey = path.join(__dirname, 'ssh_files/id_rsa_passphrase');
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            serverInfo.ssh!.passphrase = 'password';
 
             const serverSession = db.createServer(serverInfo);
             const dbConn = serverSession.createConnection(database);
