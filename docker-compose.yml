@@ -1,9 +1,10 @@
 version: '3'
 
+# Env variables are used in the image tag attributes because of the CI
+# which runs different versions
 services:
   mysql:
-    container_name: mysql
-    image: mysql:5.7
+    image: mysql:${MYSQL_VERSION:-8}
     ports:
       - 3306:3306
     environment:
@@ -13,7 +14,7 @@ services:
       - ./spec/databases/mysql/schema:/docker-entrypoint-initdb.d
 
   mariadb:
-    image: mariadb:10.1
+    image: mariadb:${MARIADB_VERSION:-10.5}
     ports:
       - 3307:3306
     environment:
@@ -22,8 +23,8 @@ services:
     volumes:
       - ./spec/databases/mysql/schema:/docker-entrypoint-initdb.d
 
-  postgres:
-    image: postgres:9.4.5
+  postgresql:
+    image: postgres:${POSTGRES_VERSION:-13}
     ports:
       - 5432:5432
     environment:
@@ -33,50 +34,36 @@ services:
       - ./spec/databases/postgresql/schema:/docker-entrypoint-initdb.d
 
   redshift:
-    image: foundryai/postgres8:redshift
+    image: foundryai/postgres8:${REDSHIFT_VERSION:-redshift}
     ports:
-      - 5433:5433
+      - 5433:5432
     environment:
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: Password12!
       POSTGRES_DATABASE: sqlectron
     volumes:
       - ./spec/databases/redshift/schema:/docker-entrypoint-initdb.d
 
   cassandra:
-    image: cassandra:3.7
+    image: cassandra:${CASSANDRA_VERSION:-3}
     environment:
       JVM_OPTS: -Xms128m -Xmx512m
     ports:
-      - 7000 # cluster
-      - 9042 # native
-    ports:
       - 9042:9042
-
-  test:
-    image: node:12
-    command: npm test
-    working_dir: /usr/src/app
-    environment:
-      DB_ADAPTERS: mysql,postgresql,cassandra
-      MYSQL_ENV_MYSQL_USER: root
-      MYSQL_ENV_MYSQL_PASSWORD: password
-      MYSQL_HOST: mysql
-      MARIADB_HOST: mariadb
-      POSTGRES_HOST: postgres
-      CASSANDRA_HOST: cassandra
-      REDSHIFT_HOST: redshift
-      SSH_HOST: openssh-server
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-    depends_on:
-      - mysql
-      - postgres
-      - cassandra
-      - openssh-server
+      - ./spec/databases/cassandra/schema:/docker-entrypoint-initdb.d
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:${SQLSERVER_VERSION:-2017-latest}
+    ports:
+      - 1433:1433
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: Password12!
+      MSSQL_COLLATION: ${MSSQL_COLLATION:-Latin1_General_CI_AS}
+    volumes:
+      - ./spec/databases/sqlserver/schema:/docker-entrypoint-initdb.d
 
   openssh-server:
-    container_name: openssh-server
     image: ghcr.io/linuxserver/openssh-server
     environment:
       DOCKER_MODS: linuxserver/mods:openssh-server-ssh-tunnel
@@ -87,7 +74,45 @@ services:
     ports:
       - 2222:2222
     restart: unless-stopped
-    depends_on:
-      - mysql
     volumes:
       - ./spec/ssh_files:/ssh_files
+
+  # The ci_setup is used by the CI setup to bring up all the dependencies.
+  # It also waits a few seconds to let all dependencies to be ready.
+  ci_setup:
+    image: busybox
+    command: sleep 10
+    depends_on:
+      - mysql
+      - mariadb
+      - postgresql
+      - redshift
+      - cassandra
+      - sqlserver
+      - openssh-server
+
+  test:
+    image: node:${NODE_VERSION:-14}
+    command: npm test
+    working_dir: /usr/src/app
+    environment:
+      DB_ADAPTERS: mysql,postgresql,cassandra
+      MYSQL_ENV_MYSQL_USER: root
+      MYSQL_ENV_MYSQL_PASSWORD: password
+      MYSQL_HOST: mysql
+      MARIADB_HOST: mariadb
+      POSTGRES_HOST: postgresql
+      CASSANDRA_HOST: cassandra
+      REDSHIFT_HOST: redshift
+      SSH_HOST: openssh-server
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - mysql
+      - mariadb
+      - postgresql
+      - redshift
+      - cassandra
+      - sqlserver
+      - openssh-server
