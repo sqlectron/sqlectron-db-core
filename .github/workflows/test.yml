@@ -45,7 +45,6 @@ jobs:
       with:
         node-version: ${{ matrix.NODE_VERSION }}
 
-    - run: npm install -g npm
     - run: npm ci
 
     # ----------------------------
