@@ -1,7 +1,7 @@
 import net from 'net';
 import { Client } from 'ssh2';
 import type { ConnectConfig } from 'ssh2';
-import { getPort, readFile } from './utils';
+import { readFile } from './utils';
 import createLogger from './logger';
 import type { ServerConfig } from './server';
 
@@ -13,8 +13,6 @@ interface TunnelConfig extends ConnectConfig {
   dstHost: string;
   dstPort: number;
   sshPort: number;
-  localHost: string;
-  localPort: number;
 }
 
 export default function (serverInfo: ServerConfig): Promise<net.Server> {
@@ -38,6 +36,7 @@ export default function (serverInfo: ServerConfig): Promise<net.Server> {
           connections.push(client);
 
           logger().debug('forwarding ssh tunnel client output');
+
           client.forwardOut(
             config.srcHost,
             config.srcPort,
@@ -69,7 +68,9 @@ export default function (serverInfo: ServerConfig): Promise<net.Server> {
       });
 
       logger().debug('connecting ssh tunnel server');
-      server.listen(config.localPort, config.localHost, () => {
+
+      // Grab an arbitrary unused port
+      server.listen(0, 'localhost', () => {
         logger().debug('connected ssh tunnel server');
         resolve(server);
       }).on('error', (err) => {
@@ -98,13 +99,13 @@ async function configTunnel(serverInfo: ServerConfig) {
     sshPort: 22,
     srcPort: 0,
     srcHost: 'localhost',
-    localHost: 'localhost',
-    localPort: await getPort(),
   };
+
   if (serverInfo.ssh.password) config.password = serverInfo.ssh.password;
   if (serverInfo.ssh.passphrase) config.passphrase = serverInfo.ssh.passphrase;
   if (serverInfo.ssh.privateKey) {
     config.privateKey = await readFile(serverInfo.ssh.privateKey);
   }
+
   return config;
 }

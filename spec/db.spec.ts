@@ -1,3 +1,4 @@
+import path from 'path';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import config from './databases/config';
@@ -6,9 +7,8 @@ import setupCassandra from './databases/cassandra/setup';
 import * as db from '../src';
 import { clearSelectLimit, setSelectLimit } from '../src/database';
 import { versionCompare } from '../src/utils';
-import type { Adapter } from '../src/adapters';
 import type { Database } from '../src/database';
-import type { Server } from '../src/server';
+import type { Server, ServerConfig } from '../src/server';
 
 chai.use(chaiAsPromised);
 
@@ -53,7 +53,11 @@ describe('db', () => {
   dbAdapters.forEach((dbAdapter: adapterType) => {
     const dbSchema = dbSchemas[dbAdapter];
 
+    const dbAdapterSettings = db.ADAPTERS.find((adapter) => adapter.key === dbAdapter);
+
     describe(dbAdapter, () => {
+      const database = config[dbAdapter].database
+
       describe('.connect', () => {
         it(`should connect into a ${dbAdapter} database`, () => {
           const serverInfo = {
@@ -71,7 +75,7 @@ describe('db', () => {
         it('should connect into server without database specified', () => {
           const serverInfo = {
             ...config[dbAdapter],
-            database: (<Adapter>db.ADAPTERS.find((adapter) => adapter.key === dbAdapter)).defaultDatabase,
+            database: dbAdapterSettings?.defaultDatabase,
             name: dbAdapter,
             adapter: dbAdapter,
           };
@@ -93,6 +97,96 @@ describe('db', () => {
           const dbConn = serverSession.createConnection(serverInfo.database);
 
           return expect(dbConn.connect()).to.not.be.rejected;
+        })
+
+        // Skip ssh tests for adapters that have it disabled
+        const describeSSH = dbAdapterSettings?.disabledFeatures.some((f) => f === 'server:ssh')
+          ? describe.skip
+          : describe;
+
+        describeSSH('connect with ssh', () => {
+          const sshHost = process.env.SSH_HOST || 'localhost';
+
+          const assertSSHConnection = async (dbConn: Database) => {
+            await dbConn.connect();
+
+            // assert beyond a simplly opening the connection,
+            // but also ensure it can run a query
+            const databases = await dbConn.listDatabases();
+            expect(databases.length).to.be.above(0);
+          };
+
+          it('should connect into server using ssh with password', () => {
+            const serverInfo: ServerConfig = {
+              ...config[dbAdapter],
+              name: dbAdapter,
+              adapter: dbAdapter,
+            };
+
+            serverInfo.ssh = {
+              host: sshHost,
+              port: 2222,
+              user: 'sqlectron',
+              password: 'password',
+            };
+
+            const serverSession = db.createServer(serverInfo);
+            const dbConn = serverSession.createConnection(database);
+
+            return expect(assertSSHConnection(dbConn)).to.not.be.rejected;
+          });
+
+          const keyTypes = ['rsa', 'ecdsa', 'ed25519']
+
+          for (const keyType of keyTypes) {
+            it(`should connect into server using ssh with private key of type ${keyType}`, () => {
+              const serverInfo: ServerConfig = {
+                ...config[dbAdapter],
+                name: dbAdapter,
+                adapter: dbAdapter,
+              };
+
+              serverInfo.ssh = {
+                host: sshHost,
+                port: 2222,
+                user: 'sqlectron',
+                privateKey: path.join(__dirname, 'ssh_files/id_' + keyType),
+              };
+
+              const serverSession = db.createServer(serverInfo);
+              const dbConn = serverSession.createConnection(database);
+
+              // ed25519 is only supported by node v12+
+              if (keyType === 'ed25519' && (process.version.startsWith('v10') || process.version.startsWith('v8'))) {
+                return expect(assertSSHConnection(dbConn)).to.be.rejectedWith(
+                  'Cannot parse privateKey: Unsupported OpenSSH private key type: ssh-ed25519'
+                );
+              } else {
+                return expect(assertSSHConnection(dbConn)).to.not.be.rejected;
+              }
+            });
+          }
+
+          it('should connect into server using ssh agent with passphrase', () => {
+            const serverInfo: ServerConfig = {
+              ...config[dbAdapter],
+              name: dbAdapter,
+              adapter: dbAdapter,
+            };
+
+            serverInfo.ssh = {
+              host: sshHost,
+              port: 2222,
+              user: 'sqlectron',
+              passphrase: 'password',
+              privateKey: path.join(__dirname, 'ssh_files/id_rsa_passphrase'),
+            };
+
+            const serverSession = db.createServer(serverInfo);
+            const dbConn = serverSession.createConnection(database);
+
+            return expect(assertSSHConnection(dbConn)).to.not.be.rejected;
+          });
         })
       });
 

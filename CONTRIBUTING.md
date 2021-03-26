@@ -28,6 +28,14 @@ It will bring up some databases such as MySQL and PostgreSQL and run all the tes
 docker-compose run --rm test
 ```
 
+Or to start the container and run the test command manually from there:
+
+```shell
+docker-compose run --rm test bash
+npm install
+npm test
+```
+
 #### Without Docker
 
 You will need to bring up all the databases then run the tests through:
