@@ -3,7 +3,6 @@ version: '3'
 # NOTE: The default versions are defined at the .env file.
 services:
   mysql:
-    container_name: mysql
     image: mysql:${MYSQL_VERSION}
     ports:
       - 3306:3306
@@ -14,7 +13,6 @@ services:
       - ./spec/databases/mysql/schema:/docker-entrypoint-initdb.d
 
   mariadb:
-    container_name: mariadb
     image: mariadb:${MARIADB_VERSION}
     ports:
       - 3307:3306
@@ -25,7 +23,6 @@ services:
       - ./spec/databases/mysql/schema:/docker-entrypoint-initdb.d
 
   postgresql:
-    container_name: postgresql
     image: postgres:${POSTGRES_VERSION}
     ports:
       - 5432:5432
@@ -36,7 +33,6 @@ services:
       - ./spec/databases/postgresql/schema:/docker-entrypoint-initdb.d
 
   redshift:
-    container_name: redshift
     image: foundryai/postgres8:${REDSHIFT_VERSION}
     ports:
       - 5433:5432
@@ -47,7 +43,6 @@ services:
       - ./spec/databases/redshift/schema:/docker-entrypoint-initdb.d
 
   cassandra:
-    container_name: cassandra
     image: cassandra:${CASSANDRA_VERSION}
     environment:
       JVM_OPTS: -Xms128m -Xmx512m
@@ -57,7 +52,6 @@ services:
       - ./spec/databases/cassandra/schema:/docker-entrypoint-initdb.d
 
   sqlserver:
-    container_name: sqlserver
     image: mcr.microsoft.com/mssql/server:${SQLSERVER_VERSION}
     ports:
       - 1433:1433
@@ -69,7 +63,6 @@ services:
       - ./spec/databases/sqlserver/schema:/docker-entrypoint-initdb.d
 
   openssh-server:
-    container_name: openssh-server
     image: ghcr.io/linuxserver/openssh-server
     environment:
       DOCKER_MODS: linuxserver/mods:openssh-server-ssh-tunnel
