@@ -1,3 +1,4 @@
+import os from 'os';
 import fs from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
@@ -210,7 +211,7 @@ describe('db', () => {
           });
 
           describe('given ssh-agent is running', () => {
-            const agentSocket = path.join(__dirname, 'ssh_files/ssh-agent.socket');
+            const agentSocket = path.join(os.tmpdir(), 'ssh-agent.socket');
 
             beforeEach(() => {
               process.env.SSH_AUTH_SOCK = agentSocket;

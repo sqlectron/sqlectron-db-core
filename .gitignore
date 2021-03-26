@@ -7,4 +7,3 @@ dist/
 spec/fixtures/.tmp.sqlectron.json
 sqlectron.db
 .nyc_output/
-ssh_files/ssh-agent.socket
