@@ -1,9 +1,10 @@
 version: '3'
 
-# NOTE: The default versions are defined at the .env file.
+# Env variables are used in the image tag attributes because of the CI
+# which runs different versions
 services:
   mysql:
-    image: mysql:${MYSQL_VERSION}
+    image: mysql:${MYSQL_VERSION:-8}
     ports:
       - 3306:3306
     environment:
@@ -13,7 +14,7 @@ services:
       - ./spec/databases/mysql/schema:/docker-entrypoint-initdb.d
 
   mariadb:
-    image: mariadb:${MARIADB_VERSION}
+    image: mariadb:${MARIADB_VERSION:-10.5}
     ports:
       - 3307:3306
     environment:
@@ -23,7 +24,7 @@ services:
       - ./spec/databases/mysql/schema:/docker-entrypoint-initdb.d
 
   postgresql:
-    image: postgres:${POSTGRES_VERSION}
+    image: postgres:${POSTGRES_VERSION:-13}
     ports:
       - 5432:5432
     environment:
@@ -33,7 +34,7 @@ services:
       - ./spec/databases/postgresql/schema:/docker-entrypoint-initdb.d
 
   redshift:
-    image: foundryai/postgres8:${REDSHIFT_VERSION}
+    image: foundryai/postgres8:${REDSHIFT_VERSION:-redshift}
     ports:
       - 5433:5432
     environment:
@@ -43,7 +44,7 @@ services:
       - ./spec/databases/redshift/schema:/docker-entrypoint-initdb.d
 
   cassandra:
-    image: cassandra:${CASSANDRA_VERSION}
+    image: cassandra:${CASSANDRA_VERSION:-3}
     environment:
       JVM_OPTS: -Xms128m -Xmx512m
     ports:
@@ -52,13 +53,13 @@ services:
       - ./spec/databases/cassandra/schema:/docker-entrypoint-initdb.d
 
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:${SQLSERVER_VERSION}
+    image: mcr.microsoft.com/mssql/server:${SQLSERVER_VERSION:-2017-latest}
     ports:
       - 1433:1433
     environment:
       ACCEPT_EULA: Y
       SA_PASSWORD: Password12!
-      MSSQL_COLLATION: ${MSSQL_COLLATION}
+      MSSQL_COLLATION: ${MSSQL_COLLATION:-Latin1_General_CI_AS}
     volumes:
       - ./spec/databases/sqlserver/schema:/docker-entrypoint-initdb.d
 
@@ -91,7 +92,7 @@ services:
       - openssh-server
 
   test:
-    image: node:${NODE_VERSION}
+    image: node:${NODE_VERSION:-14}
     command: npm test
     working_dir: /usr/src/app
     environment:

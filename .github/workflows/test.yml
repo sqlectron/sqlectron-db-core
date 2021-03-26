@@ -14,7 +14,7 @@ jobs:
       matrix:
         include:
           # For databases that use always the same version,
-          # the version is defined at the .env file
+          # it defaults to the env variable fallback defined in the docker-compose file
           - NODE_VERSION: 10.x
             MYSQL_VERSION: 5.7
             MARIADB_VERSION: 10.1
