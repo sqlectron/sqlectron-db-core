@@ -1,15 +1,19 @@
 export interface DatabaseFilter {
-  database?: string | {
-    only?: string[];
-    ignore?: string[];
-  }
+  database?:
+    | string
+    | {
+        only?: string[];
+        ignore?: string[];
+      };
 }
 
 export interface SchemaFilter {
-  schema?: string | {
-    only?: string[]
-    ignore?: string[]
-  }
+  schema?:
+    | string
+    | {
+        only?: string[];
+        ignore?: string[];
+      };
 }
 
 export function buildSchemaFilter(

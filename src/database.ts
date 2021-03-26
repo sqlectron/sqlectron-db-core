@@ -46,7 +46,9 @@ export class Database {
   async connect(): Promise<void> {
     /* eslint no-param-reassign: 0 */
     if (this.connecting) {
-      throw new Error('There is already a connection in progress for this database. Aborting this new request.');
+      throw new Error(
+        'There is already a connection in progress for this database. Aborting this new request.',
+      );
     }
 
     try {
@@ -71,10 +73,7 @@ export class Database {
 
       const adapter = adapterFactory(this.server.config.adapter, this.server, this);
 
-      await Promise.all([
-        adapter.connect(),
-        this.handleSSHError(),
-      ]);
+      await Promise.all([adapter.connect(), this.handleSSHError()]);
 
       this.connection = adapter;
     } catch (err) {
@@ -112,29 +111,38 @@ export class Database {
     return (<AbstractAdapter>this.connection).listSchemas(filter);
   }
 
-  listTables(filter: SchemaFilter): Promise<{name: string}[]> {
+  listTables(filter: SchemaFilter): Promise<{ name: string }[]> {
     this.checkIsConnected();
     return (<AbstractAdapter>this.connection).listTables(filter);
   }
 
-  listViews(filter: SchemaFilter): Promise<{name: string}[]> {
+  listViews(filter: SchemaFilter): Promise<{ name: string }[]> {
     this.checkIsConnected();
     return (<AbstractAdapter>this.connection).listViews(filter);
   }
 
-  listRoutines(filter: SchemaFilter): Promise<{
-    schema?: string;
-    routineName: string;
-    routineType: string;
-  }[]> {
+  listRoutines(
+    filter: SchemaFilter,
+  ): Promise<
+    {
+      schema?: string;
+      routineName: string;
+      routineType: string;
+    }[]
+  > {
     this.checkIsConnected();
     return (<AbstractAdapter>this.connection).listRoutines(filter);
   }
 
-  listTableColumns(table: string, schema?: string): Promise<{
-    columnName: string;
-    dataType: string;
-  }[]> {
+  listTableColumns(
+    table: string,
+    schema?: string,
+  ): Promise<
+    {
+      columnName: string;
+      dataType: string;
+    }[]
+  > {
     this.checkIsConnected();
     return (<AbstractAdapter>this.connection).listTableColumns(table, schema);
   }
@@ -154,17 +162,24 @@ export class Database {
     return (<AbstractAdapter>this.connection).getTableReferences(table, schema);
   }
 
-  getTableKeys(table: string, schema?: string): Promise<{
-    columnName: string;
-    keyType: string;
-    constraintName: string | null;
-    referencedTable: string | null;
-  }[]> {
+  getTableKeys(
+    table: string,
+    schema?: string,
+  ): Promise<
+    {
+      columnName: string;
+      keyType: string;
+      constraintName: string | null;
+      referencedTable: string | null;
+    }[]
+  > {
     this.checkIsConnected();
     return (<AbstractAdapter>this.connection).getTableKeys(table, schema);
   }
 
-  query(queryText: string): {
+  query(
+    queryText: string,
+  ): {
     execute: () => Promise<QueryRowResult[]>;
     cancel: () => void;
   } {
@@ -181,10 +196,10 @@ export class Database {
     this.checkIsConnected();
     let limitValue = limit;
     if (limit === undefined) {
-      limitValue = (selectLimit !== null) ? selectLimit : DEFAULT_LIMIT;
+      limitValue = selectLimit !== null ? selectLimit : DEFAULT_LIMIT;
     }
     return Promise.resolve(
-      (<AbstractAdapter>this.connection).getQuerySelectTop(table, <number>limitValue, schema)
+      (<AbstractAdapter>this.connection).getQuerySelectTop(table, <number>limitValue, schema),
     );
   }
 
@@ -225,10 +240,9 @@ export class Database {
 
   getTableDeleteScript(table: string, schema?: string): Promise<string> {
     const schemaSelection = this.resolveSchema(schema);
-    return Promise.resolve([
-      `DELETE FROM ${schemaSelection}${this.wrap(table)}`,
-      'WHERE <condition>;',
-    ].join(' '));
+    return Promise.resolve(
+      [`DELETE FROM ${schemaSelection}${this.wrap(table)}`, 'WHERE <condition>;'].join(' '),
+    );
   }
 
   getViewCreateScript(view: string, schema?: string): Promise<string[]> {

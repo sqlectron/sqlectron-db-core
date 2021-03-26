@@ -1,15 +1,27 @@
 {
+  "env": {
+    "node": true
+  },
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": "./tsconfig.eslint.json"
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["prettier", "@typescript-eslint"],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+    "plugin:@typescript-eslint/recommended-requiring-type-checking",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
   ],
-  "env": {
-    "node": true
-  }
+  "overrides": [
+    {
+      "files": ["spec"],
+      "env": {
+        "node": true,
+        "mocha": true
+      }
+    }
+  ],
+  "ignorePatterns": ["dist"]
 }

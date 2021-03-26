@@ -85,9 +85,11 @@ export default class SqlServerAdapter extends AbstractAdapter {
   async connect(): Promise<void> {
     logger().debug('connecting');
 
-    const version = (await this.driverExecuteSingleQuery<{version: string}>({
-      query: "SELECT @@version as 'version'"
-    })).data[0].version;
+    const version = (
+      await this.driverExecuteSingleQuery<{ version: string }>({
+        query: "SELECT @@version as 'version'",
+      })
+    ).data[0].version;
 
     this.version = {
       name: 'SQL Server',
@@ -106,11 +108,11 @@ export default class SqlServerAdapter extends AbstractAdapter {
   }
 
   async getSchema(connection?: ConnectionPool): Promise<string> {
-    const sql = 'SELECT schema_name() AS \'schema\'';
+    const sql = "SELECT schema_name() AS 'schema'";
 
-    const { data } = await this.driverExecuteSingleQuery<{schema: string}>(
+    const { data } = await this.driverExecuteSingleQuery<{ schema: string }>(
       { query: sql },
-      connection
+      connection,
     );
     return data[0].schema;
   }
@@ -124,7 +126,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY name
     `;
 
-    const { data } = await this.driverExecuteSingleQuery<{name: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ name: string }>({ query: sql });
 
     return data.map((row) => row.name);
   }
@@ -138,7 +140,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY schema_name
     `;
 
-    const { data } = await this.driverExecuteSingleQuery<{schema_name: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ schema_name: string }>({ query: sql });
 
     return data.map((row) => row.schema_name);
   }
@@ -216,7 +218,10 @@ export default class SqlServerAdapter extends AbstractAdapter {
       ORDER BY ordinal_position
     `;
 
-    const { data } = await this.driverExecuteSingleQuery<{column_name: string; data_type: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{
+      column_name: string;
+      data_type: string;
+    }>({ query: sql });
 
     return data.map((row) => ({
       columnName: row.column_name,
@@ -229,7 +234,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     // is using sp_helptrigger stored procedure to fetch triggers related to table
     const sql = `EXEC sp_helptrigger ${wrapIdentifier(table)}`;
 
-    const { data } = await this.driverExecuteSingleQuery<{trigger_name: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ trigger_name: string }>({ query: sql });
 
     return data.map((row) => row.trigger_name);
   }
@@ -239,7 +244,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     // is using sp_helpindex stored procedure to fetch indexes related to table
     const sql = `EXEC sp_helpindex ${wrapIdentifier(table)}`;
 
-    const { data } = await this.driverExecuteSingleQuery<{index_name: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ index_name: string }>({ query: sql });
 
     return data.map((row) => row.index_name);
   }
@@ -251,7 +256,9 @@ export default class SqlServerAdapter extends AbstractAdapter {
       WHERE parent_object_id = OBJECT_ID('${table}')
     `;
 
-    const { data } = await this.driverExecuteSingleQuery<{referenced_table_name: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ referenced_table_name: string }>({
+      query: sql,
+    });
 
     return data.map((row) => row.referenced_table_name);
   }
@@ -359,7 +366,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
       AND so.name = '${table}'
     `;
 
-    const { data } = await this.driverExecuteSingleQuery<{createtable: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ createtable: string }>({ query: sql });
 
     return data.map((row) => row.createtable.replace(/\r\n/g, '\n'));
   }
@@ -367,7 +374,9 @@ export default class SqlServerAdapter extends AbstractAdapter {
   async getViewCreateScript(view: string): Promise<string[]> {
     const sql = `SELECT OBJECT_DEFINITION (OBJECT_ID('${view}')) AS ViewDefinition;`;
 
-    const { data } = await this.driverExecuteSingleQuery<{ViewDefinition: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ ViewDefinition: string }>({
+      query: sql,
+    });
 
     return data.map((row) => appendSemiColon(row.ViewDefinition));
   }
@@ -379,7 +388,9 @@ export default class SqlServerAdapter extends AbstractAdapter {
       WHERE routine_name = '${routine}'
     `;
 
-    const { data } = await this.driverExecuteSingleQuery<{routine_definition: string}>({ query: sql });
+    const { data } = await this.driverExecuteSingleQuery<{ routine_definition: string }>({
+      query: sql,
+    });
 
     return data.map((row) => appendSemiColon(row.routine_definition));
   }
@@ -395,26 +406,45 @@ export default class SqlServerAdapter extends AbstractAdapter {
         AND table_type NOT LIKE '%VIEW%'
       `;
 
-      const { data } = await this.driverExecuteSingleQuery<{table_name: string}>(
+      const { data } = await this.driverExecuteSingleQuery<{ table_name: string }>(
         { query: sql },
-        connection
+        connection,
       );
 
-      const disableForeignKeys = data.map((row) => `
-        ALTER TABLE ${wrapIdentifier(schema)}.${wrapIdentifier(row.table_name)} NOCHECK CONSTRAINT all;
-      `).join('');
-      const truncateAll = data.map((row) => `
+      const disableForeignKeys = data
+        .map(
+          (row) => `
+        ALTER TABLE ${wrapIdentifier(schema)}.${wrapIdentifier(
+            row.table_name,
+          )} NOCHECK CONSTRAINT all;
+      `,
+        )
+        .join('');
+      const truncateAll = data
+        .map(
+          (row) => `
         DELETE FROM ${wrapIdentifier(schema)}.${wrapIdentifier(row.table_name)};
         DBCC CHECKIDENT ('${schema}.${row.table_name}', RESEED, 0);
-      `).join('');
-      const enableForeignKeys = data.map((row) => `
-        ALTER TABLE ${wrapIdentifier(schema)}.${wrapIdentifier(row.table_name)} WITH CHECK CHECK CONSTRAINT all;
-      `).join('');
+      `,
+        )
+        .join('');
+      const enableForeignKeys = data
+        .map(
+          (row) => `
+        ALTER TABLE ${wrapIdentifier(schema)}.${wrapIdentifier(
+            row.table_name,
+          )} WITH CHECK CHECK CONSTRAINT all;
+      `,
+        )
+        .join('');
 
-      await this.driverExecuteQuery({
-        query: disableForeignKeys + truncateAll + enableForeignKeys,
-        multiple: true,
-      }, connection);
+      await this.driverExecuteQuery(
+        {
+          query: disableForeignKeys + truncateAll + enableForeignKeys,
+          multiple: true,
+        },
+        connection,
+      );
     });
   }
 
@@ -434,9 +464,9 @@ export default class SqlServerAdapter extends AbstractAdapter {
 
             const result = await promiseQuery;
             const data = request.multiple ? result.recordsets : result.recordset;
-            const affectedRows = result.rowsAffected ?
-              result.rowsAffected.reduce((a, b) => a + b, 0) :
-              undefined;
+            const affectedRows = result.rowsAffected
+              ? result.rowsAffected.reduce((a, b) => a + b, 0)
+              : undefined;
 
             const commands = identifyCommands(queryText).map((item) => item.type);
 
@@ -444,14 +474,12 @@ export default class SqlServerAdapter extends AbstractAdapter {
             // So we "fake" there is at least one result.
             const results = <IRecordSet<unknown>[]>(!data.length && affectedRows ? [[]] : data);
 
-            return results.map((_, idx) => parseRowQueryResult(
-              results[idx],
-              affectedRows,
-              commands[idx],
-            ));
+            return results.map((_, idx) =>
+              parseRowQueryResult(results[idx], affectedRows, commands[idx]),
+            );
           } catch (err: unknown) {
-            if ((err as {code: string}).code === mmsqlErrors.CANCELED) {
-              (err as {sqlectronError: string}).sqlectronError = 'CANCELED_BY_USER';
+            if ((err as { code: string }).code === mmsqlErrors.CANCELED) {
+              (err as { sqlectronError: string }).sqlectronError = 'CANCELED_BY_USER';
             }
 
             throw err;
@@ -468,7 +496,6 @@ export default class SqlServerAdapter extends AbstractAdapter {
       },
     };
   }
-
 
   async executeQuery(queryText: string, connection?: ConnectionPool): Promise<QueryRowResult[]> {
     const { data, result } = await this.driverExecuteQuery(
@@ -489,7 +516,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     return (<Array<IRecordSet<unknown> | []>>results).map(
       (value: IRecordSet<unknown> | [], idx: number) => {
         return parseRowQueryResult(value, rowsAffected, commands[idx]);
-      }
+      },
     );
   }
 
@@ -505,7 +532,10 @@ export default class SqlServerAdapter extends AbstractAdapter {
     };
   }
 
-  async driverExecuteQuery<T = unknown>(queryArgs: QueryArgs, connection?: ConnectionPool): Promise<QueryResult<T>> {
+  async driverExecuteQuery<T = unknown>(
+    queryArgs: QueryArgs,
+    connection?: ConnectionPool,
+  ): Promise<QueryResult<T>> {
     const runQuery = async (connection: ConnectionPool): Promise<QueryResult<T>> => {
       const request = connection.request();
       if (queryArgs.multiple) {
@@ -518,19 +548,19 @@ export default class SqlServerAdapter extends AbstractAdapter {
         request,
         result,
         data: request.multiple
-          ? result.recordsets as IRecordSet<T>[]
+          ? (result.recordsets as IRecordSet<T>[])
           : [result.recordset as IRecordSet<T>],
       };
     };
 
-    return connection
-      ? runQuery(connection)
-      : this.runWithConnection(runQuery);
+    return connection ? runQuery(connection) : this.runWithConnection(runQuery);
   }
 
-  async runWithConnection<T = QueryResult>(run: (connection: ConnectionPool) => Promise<T>): Promise<T> {
+  async runWithConnection<T = QueryResult>(
+    run: (connection: ConnectionPool) => Promise<T>,
+  ): Promise<T> {
     if (!this.conn.connection) {
-      this.conn.connection = await (new ConnectionPool(this.conn.dbConfig)).connect();
+      this.conn.connection = await new ConnectionPool(this.conn.dbConfig).connect();
     }
     return run(this.conn.connection);
   }
@@ -541,14 +571,14 @@ export default class SqlServerAdapter extends AbstractAdapter {
 }
 
 export function wrapIdentifier(value: string): string {
-  return (value !== '*' ? `[${value.replace(/\[/g, '[')}]` : '*');
+  return value !== '*' ? `[${value.replace(/\[/g, '[')}]` : '*';
 }
 
 function parseRowQueryResult(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: IRecordSet<any> | [],
   affectedRows: number | undefined,
-  command: string
+  command: string,
 ): QueryRowResult {
   // Fallback in case the identifier could not reconize the command
   const isSelect = !!(data.length || !affectedRows);

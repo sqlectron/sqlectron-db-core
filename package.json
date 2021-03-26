@@ -8,7 +8,11 @@
   "scripts": {
     "compile": "tsc",
     "watch": "tsc -w",
-    "lint": "eslint src/ spec/",
+    "check-types": "tsc --noemit --project tsconfig.json",
+    "eslint": "eslint . --ext .js,.jsx,.ts",
+    "lint": "npm run eslint && npm run check-types",
+    "format": "prettier --write \"**/*.{js,ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
     "test:mysql": "DB_ADAPTERS=mysql npm run test",
     "test:mariadb": "DB_ADAPTERS=mariadb npm run test",
     "test:sqlite": "DB_ADAPTERS=sqlite npm run test",
@@ -20,7 +24,8 @@
     "test:coverage": "nyc --reporter=text mocha --exit --timeout 4000 --require ts-node/register --reporter spec \"./spec/**/*.spec.ts\"",
     "watch-test": "mocha --require ts-node/register --watch --reporter spec \"./spec/**/*.spec.ts\"",
     "prepublishOnly": "echo \"Do not run publish directly, run publisher\" && exit 1",
-    "publisher": "publisher"
+    "publisher": "publisher",
+    "prepare": "husky install"
   },
   "keywords": [
     "sqlectron",
@@ -57,17 +62,22 @@
     "@types/sql-query-identifier": "^1.1.0",
     "@types/sqlite3": "^3.1.6",
     "@types/ssh2": "^0.5.46",
-    "@typescript-eslint/eslint-plugin": "^4.11.0",
-    "@typescript-eslint/parser": "^4.11.0",
+    "@typescript-eslint/eslint-plugin": "^4.19.0",
+    "@typescript-eslint/parser": "^4.19.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "connection-string": "^3.4.2",
     "eslint": "^7.16.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-prettier": "^3.3.1",
+    "husky": "^5.2.0",
+    "lint-staged": "^10.5.4",
     "mocha": "^6.2.3",
     "nyc": "^14.1.1",
+    "prettier": "^2.2.1",
     "sinon": "^7.5.0",
     "ts-node": "^9.1.1",
-    "typescript": "^4.1.2"
+    "typescript": "^4.2.3"
   },
   "nyc": {
     "extension": [
