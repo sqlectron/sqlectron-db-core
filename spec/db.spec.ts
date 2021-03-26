@@ -15,10 +15,7 @@ import type { Server, ServerConfig } from '../src/server';
 
 chai.use(chaiAsPromised);
 
-const isLowerThanNode12 =
-  process.version.startsWith('v10') ||
-  process.version.startsWith('v9') ||
-  process.version.startsWith('v8');
+const isLowerThanNode12 = process.version.startsWith('v11') || process.version.startsWith('v10');
 
 type adapterType =
   | 'sqlite'
