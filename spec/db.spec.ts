@@ -124,10 +124,13 @@ describe('db', () => {
           : describe;
 
         describeSSH('connect with ssh', () => {
-          let serverInfo = {} as ServerConfig;
-
-          beforeEach(() => {
-            serverInfo = {
+          const getSSHServerInfo = (sshConfig: {
+            password?: string;
+            passphrase?: string;
+            privateKey?: string;
+            useAgent?: boolean;
+          }): ServerConfig => {
+            const serverInfo: ServerConfig = {
               ...config[dbAdapter],
               name: dbAdapter,
               adapter: dbAdapter,
@@ -135,6 +138,10 @@ describe('db', () => {
                 host: process.env.SSH_HOST || 'localhost',
                 port: 2222,
                 user: 'sqlectron',
+                password: sshConfig.password,
+                passphrase: sshConfig.passphrase,
+                privateKey: sshConfig.privateKey,
+                useAgent: sshConfig.useAgent,
               },
             };
 
@@ -147,7 +154,9 @@ describe('db', () => {
             } else if (dbAdapter === 'redshift') {
               serverInfo.port = 5432;
             }
-          });
+
+            return serverInfo;
+          };
 
           const assertSSHConnection = async (dbConn: Database) => {
             await dbConn.connect();
@@ -159,8 +168,7 @@ describe('db', () => {
           };
 
           it('should connect into server using ssh with password', () => {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            serverInfo.ssh!.password = 'password';
+            const serverInfo = getSSHServerInfo({ password: 'password' });
 
             const serverSession = db.createServer(serverInfo);
             const dbConn = serverSession.createConnection(database);
@@ -172,8 +180,9 @@ describe('db', () => {
 
           for (const keyType of keyTypes) {
             it(`should connect into server using ssh with private key of type ${keyType}`, () => {
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              serverInfo.ssh!.privateKey = path.join(__dirname, 'ssh_files/id_' + keyType);
+              const serverInfo = getSSHServerInfo({
+                privateKey: path.join(__dirname, 'ssh_files/id_' + keyType),
+              });
 
               const serverSession = db.createServer(serverInfo);
               const dbConn = serverSession.createConnection(database);
@@ -191,8 +200,9 @@ describe('db', () => {
 
           describe('given ssh-agent is not running', () => {
             it('should fail to connect into server using ssh agent', () => {
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              serverInfo.ssh!.useAgent = true;
+              const serverInfo = getSSHServerInfo({
+                useAgent: true,
+              });
 
               const serverSession = db.createServer(serverInfo);
               const dbConn = serverSession.createConnection(database);
@@ -231,8 +241,9 @@ describe('db', () => {
                 execSync(`chmod 400 ${privateKey}`);
                 execSync(`ssh-add ${privateKey}`);
 
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                serverInfo.ssh!.useAgent = true;
+                const serverInfo = getSSHServerInfo({
+                  useAgent: true,
+                });
 
                 const serverSession = db.createServer(serverInfo);
                 const dbConn = serverSession.createConnection(database);
@@ -249,11 +260,11 @@ describe('db', () => {
             }
           });
 
-          it('should connect into server using ssh agent with passphrase', () => {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            serverInfo.ssh!.privateKey = path.join(__dirname, 'ssh_files/id_rsa_passphrase');
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            serverInfo.ssh!.passphrase = 'password';
+          it('should connect into server using ssh with privateKey and passphrase', () => {
+            const serverInfo = getSSHServerInfo({
+              privateKey: path.join(__dirname, 'ssh_files/id_rsa_passphrase'),
+              passphrase: 'password',
+            });
 
             const serverSession = db.createServer(serverInfo);
             const dbConn = serverSession.createConnection(database);
