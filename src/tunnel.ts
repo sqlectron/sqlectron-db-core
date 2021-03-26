@@ -94,6 +94,7 @@ async function configTunnel(serverInfo: ServerConfig) {
   if (!serverInfo.ssh) {
     throw new Error('SSH information not specified');
   }
+
   const config: TunnelConfig = {
     username: serverInfo.ssh.user,
     port: serverInfo.ssh.port,
@@ -105,16 +106,20 @@ async function configTunnel(serverInfo: ServerConfig) {
     srcHost: 'localhost',
   };
 
-  if (serverInfo.ssh.password) {
-    config.password = serverInfo.ssh.password;
-  }
-
   if (serverInfo.ssh.passphrase) {
     config.passphrase = serverInfo.ssh.passphrase;
   }
 
-  if (serverInfo.ssh.privateKey) {
+  if (serverInfo.ssh.useAgent) {
+    if (!process.env.SSH_AUTH_SOCK) {
+      throw new Error('not set SSH_AUTH_SOCK env variable');
+    }
+
+    config.agent = process.env.SSH_AUTH_SOCK;
+  } else if (serverInfo.ssh.privateKey) {
     config.privateKey = await readFile(serverInfo.ssh.privateKey);
+  } else if (serverInfo.ssh.password) {
+    config.password = serverInfo.ssh.password;
   }
 
   return config;

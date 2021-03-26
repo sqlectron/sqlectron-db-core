@@ -1,3 +1,6 @@
+import os from 'os';
+import fs from 'fs';
+import { execSync } from 'child_process';
 import path from 'path';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -11,6 +14,11 @@ import type { Database } from '../src/database';
 import type { Server, ServerConfig } from '../src/server';
 
 chai.use(chaiAsPromised);
+
+const isLowerThanNode12 =
+  process.version.startsWith('v10') ||
+  process.version.startsWith('v9') ||
+  process.version.startsWith('v8');
 
 type adapterType =
   | 'sqlite'
@@ -168,10 +176,7 @@ describe('db', () => {
               const dbConn = serverSession.createConnection(database);
 
               // ed25519 is only supported by node v12+
-              if (
-                keyType === 'ed25519' &&
-                (process.version.startsWith('v10') || process.version.startsWith('v8'))
-              ) {
+              if (keyType === 'ed25519' && isLowerThanNode12) {
                 return expect(assertSSHConnection(dbConn)).to.be.rejectedWith(
                   'Cannot parse privateKey: Unsupported OpenSSH private key type: ssh-ed25519',
                 );
@@ -180,6 +185,86 @@ describe('db', () => {
               }
             });
           }
+
+          describe('given ssh-agent is not running', () => {
+            it('should fail to connect into server using ssh agent', () => {
+              const serverInfo: ServerConfig = {
+                ...config[dbAdapter],
+                name: dbAdapter,
+                adapter: dbAdapter,
+              };
+
+              serverInfo.ssh = {
+                host: sshHost,
+                port: 2222,
+                user: 'sqlectron',
+                useAgent: true,
+              };
+
+              const serverSession = db.createServer(serverInfo);
+              const dbConn = serverSession.createConnection(database);
+
+              return expect(assertSSHConnection(dbConn)).to.be.rejectedWith(
+                'not set SSH_AUTH_SOCK env variable',
+              );
+            });
+          });
+
+          describe('given ssh-agent is running', () => {
+            const agentSocket = path.join(os.tmpdir(), 'ssh-agent.socket');
+
+            beforeEach(() => {
+              process.env.SSH_AUTH_SOCK = agentSocket;
+              execSync(`eval $(ssh-agent -a ${agentSocket})`).toString();
+            });
+
+            afterEach(() => {
+              delete process.env.SSH_AUTH_SOCK;
+
+              if (fs.existsSync(agentSocket)) {
+                fs.unlinkSync(agentSocket);
+              }
+
+              execSync('SSH_AGENT_PID="$(pidof ssh-agent)" ssh-agent -k');
+            });
+
+            for (const keyType of keyTypes) {
+              it(`should connect into server using ssh agent with private key of type ${keyType}`, () => {
+                const privateKey = path.join(__dirname, 'ssh_files/id_' + keyType);
+
+                // Ensure it has the right permission otherwise ssh-add will fail.
+                // It is not setup properly on git by design
+                // https://stackoverflow.com/questions/54260133/read-only-permission-for-file-on-git
+                execSync(`chmod 400 ${privateKey}`);
+                execSync(`ssh-add ${privateKey}`);
+
+                const serverInfo: ServerConfig = {
+                  ...config[dbAdapter],
+                  name: dbAdapter,
+                  adapter: dbAdapter,
+                };
+
+                serverInfo.ssh = {
+                  host: sshHost,
+                  port: 2222,
+                  user: 'sqlectron',
+                  useAgent: true,
+                };
+
+                const serverSession = db.createServer(serverInfo);
+                const dbConn = serverSession.createConnection(database);
+
+                // ed25519 is only supported by node v12+
+                if (keyType === 'ed25519' && isLowerThanNode12) {
+                  return expect(assertSSHConnection(dbConn)).to.be.rejectedWith(
+                    'All configured authentication methods failed',
+                  );
+                } else {
+                  return expect(assertSSHConnection(dbConn)).to.not.be.rejected;
+                }
+              });
+            }
+          });
 
           it('should connect into server using ssh agent with passphrase', () => {
             const serverInfo: ServerConfig = {

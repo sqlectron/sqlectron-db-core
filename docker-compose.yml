@@ -53,7 +53,7 @@ services:
       - 9042:9042
 
   test:
-    image: node:10.24.0
+    image: node:12
     command: npm test
     working_dir: /usr/src/app
     environment:
