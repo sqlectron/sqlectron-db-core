@@ -1,6 +1,6 @@
 # sqlectron-db-core
 
-[![Build Status](https://github.com/sqlectron/sqlectron-db-core/workflows/Test/badge.svg?branch=master)](https://github.com/sqlectron/sqlectron-db-core/actions?query=workflow%3ATest+branch%3Amaster)
+[![Build Status](https://github.com/sqlectron/sqlectron-db-core/workflows/Test/badge.svg?branch=master)](https://github.com/sqlectron/sqlectron-db-core/actions?query=workflow%3ATest+branch%3Amain)
 [![npm](https://img.shields.io/npm/v/sqlectron-db-core)](https://www.npmjs.com/package/sqlectron-db-core)
 
 The common code used by all sqlectron clients.
