@@ -51,7 +51,7 @@
     "ssh2": "^0.8.9"
   },
   "devDependencies": {
-    "@masterodin/publisher": "^0.7.0",
+    "@masterodin/publisher": "^0.8.0",
     "@types/cassandra-driver": "^3.6.0",
     "@types/chai": "^4.2.14",
     "@types/chai-as-promised": "^7.1.3",
