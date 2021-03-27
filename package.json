@@ -1,6 +1,6 @@
 {
   "name": "sqlectron-db-core",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "sqlectron-db-core",
   "main": "dist/index.js",
   "author": "The SQLECTRON Team",
