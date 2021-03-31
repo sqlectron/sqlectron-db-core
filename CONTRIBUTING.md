@@ -51,3 +51,14 @@ npm test
 1. Ensure the [tests](/spec/db.spec.js) are passing. May require adapting the tests to handle any different input/output the new client might have from the other clients.
 1. [Link](https://github.com/sqlectron/sqlectron-gui/blob/master/docs/development/test-core-changes.md) sqlectron-core to sqlectron-gui and test it in the app.
 1. Include a logo `server-db-client-<client_name>.png` into the [app](https://github.com/sqlectron/sqlectron-gui/tree/master/src/renderer/components).
+
+## Publishing
+
+Publishing a new release to npm:
+
+- Merge the chagnes to the main branch.
+- Run `npm version <major|minor|patch>` based on the level of the changes being deployed. It will set a new version in
+  the package.json and also create a new git tag for that.
+- Run `git push --follow-tags` to push those changes to the remote git repository.
+- Create a new release for that version at https://github.com/sqlectron/sqlectron-db-core/releases. Don't forget to set
+  the release title and the description with all the changes.
