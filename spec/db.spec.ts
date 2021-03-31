@@ -1,5 +1,4 @@
 import os from 'os';
-import fs from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
 import chai, { expect } from 'chai';
@@ -212,20 +211,25 @@ describe('db', () => {
 
           describe('given ssh-agent is running', () => {
             const agentSocket = path.join(os.tmpdir(), 'ssh-agent.socket');
+            let sshPID = '';
 
             beforeEach(() => {
               process.env.SSH_AUTH_SOCK = agentSocket;
-              execSync(`eval $(ssh-agent -a ${agentSocket})`).toString();
+
+              // Starts ssh-agent
+              const sshInit = execSync(`ssh-agent -s -a ${agentSocket}`).toString();
+              const output = execSync(sshInit).toString();
+              sshPID = output.replace(/[^\d]/g, '');
+              if (!sshPID) {
+                throw new Error('Could not resolve ssh agent process id');
+              }
             });
 
             afterEach(() => {
               delete process.env.SSH_AUTH_SOCK;
-
-              if (fs.existsSync(agentSocket)) {
-                fs.unlinkSync(agentSocket);
+              if (sshPID) {
+                execSync(`SSH_AGENT_PID="${sshPID}" ssh-agent -k`);
               }
-
-              execSync('SSH_AGENT_PID="$(pidof ssh-agent)" ssh-agent -k');
             });
 
             for (const keyType of keyTypes) {
