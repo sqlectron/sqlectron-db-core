@@ -10,6 +10,7 @@ import type { Server } from '../server';
 export interface Adapter {
   key: string;
   name: string;
+  protocol: string;
   adapter: typeof AbstractAdapter;
   defaultPort?: number;
   defaultDatabase?: string;
@@ -22,6 +23,7 @@ export interface Adapter {
 export const ADAPTERS: Adapter[] = [
   {
     key: 'mysql',
+    protocol: 'mysql',
     name: 'MySQL',
     adapter: MysqlAdapter,
     defaultPort: 3306,
@@ -29,6 +31,7 @@ export const ADAPTERS: Adapter[] = [
   },
   {
     key: 'mariadb',
+    protocol: 'mariadb',
     name: 'MariaDB',
     adapter: MysqlAdapter,
     defaultPort: 3306,
@@ -36,6 +39,7 @@ export const ADAPTERS: Adapter[] = [
   },
   {
     key: 'postgresql',
+    protocol: 'postgres',
     name: 'PostgreSQL',
     adapter: PostgresqlAdapter,
     defaultDatabase: 'postgres',
@@ -44,6 +48,7 @@ export const ADAPTERS: Adapter[] = [
   },
   {
     key: 'redshift',
+    protocol: 'redshift',
     name: 'Redshift',
     adapter: PostgresqlAdapter,
     defaultDatabase: 'postgres',
@@ -52,6 +57,7 @@ export const ADAPTERS: Adapter[] = [
   },
   {
     key: 'sqlserver',
+    protocol: 'mssql',
     name: 'Microsoft SQL Server',
     adapter: SqlServerAdapter,
     defaultPort: 1433,
@@ -59,6 +65,7 @@ export const ADAPTERS: Adapter[] = [
   },
   {
     key: 'sqlite',
+    protocol: 'file',
     name: 'SQLite',
     adapter: SqliteAdapter,
     defaultDatabase: ':memory:',
@@ -77,6 +84,7 @@ export const ADAPTERS: Adapter[] = [
   },
   {
     key: 'cassandra',
+    protocol: 'cassandra',
     name: 'Cassandra',
     adapter: CassandraAdapter,
     defaultPort: 9042,
