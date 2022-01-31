@@ -48,7 +48,7 @@
     "pg": "^8.5.1",
     "sql-query-identifier": "^2.0.0",
     "sqlite3": "^5.0.2",
-    "ssh2": "^0.8.9"
+    "ssh2": "~1.4.0"
   },
   "devDependencies": {
     "@masterodin/publisher": "^0.8.0",
