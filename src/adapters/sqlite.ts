@@ -211,7 +211,7 @@ export default class SqliteAdapter extends AbstractAdapter {
 
   async truncateAllTables(): Promise<void> {
     await this.runWithConnection(async (connection) => {
-      const tables = await this.listTables(null, connection);
+      const tables = await this.listTables(undefined, connection);
 
       const truncateAll = tables
         .map(
