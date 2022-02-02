@@ -131,7 +131,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     return data.map((row) => row.name);
   }
 
-  async listSchemas(filter: SchemaFilter): Promise<string[]> {
+  async listSchemas(filter?: SchemaFilter): Promise<string[]> {
     const schemaFilter = buildSchemaFilter(filter);
     const sql = `
       SELECT schema_name
@@ -145,7 +145,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     return data.map((row) => row.schema_name);
   }
 
-  async listTables(filter: SchemaFilter): Promise<ListTableResult[]> {
+  async listTables(filter?: SchemaFilter): Promise<ListTableResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'table_schema');
     const sql = `
       SELECT
@@ -165,7 +165,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     }));
   }
 
-  async listViews(filter: SchemaFilter): Promise<ListViewResult[]> {
+  async listViews(filter?: SchemaFilter): Promise<ListViewResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'table_schema');
     const sql = `
       SELECT
@@ -184,7 +184,7 @@ export default class SqlServerAdapter extends AbstractAdapter {
     }));
   }
 
-  async listRoutines(filter: SchemaFilter): Promise<ListRoutineResult[]> {
+  async listRoutines(filter?: SchemaFilter): Promise<ListRoutineResult[]> {
     const schemaFilter = buildSchemaFilter(filter, 'routine_schema');
     const sql = `
       SELECT

@@ -18,6 +18,7 @@ import type {
 } from './abstract_adapter';
 import type { Server } from '../server';
 import type { Database } from '../database';
+import { SchemaFilter } from '..';
 
 const logger = createLogger('db:clients:sqlite');
 
@@ -116,7 +117,10 @@ export default class SqliteAdapter extends AbstractAdapter {
     });
   }
 
-  async listTables(filter: unknown, connection?: sqlite3.Database): Promise<ListTableResult[]> {
+  async listTables(
+    filter?: SchemaFilter,
+    connection?: sqlite3.Database,
+  ): Promise<ListTableResult[]> {
     const sql = `
       SELECT name
       FROM sqlite_master
@@ -207,7 +211,7 @@ export default class SqliteAdapter extends AbstractAdapter {
 
   async truncateAllTables(): Promise<void> {
     await this.runWithConnection(async (connection) => {
-      const tables = await this.listTables(null, connection);
+      const tables = await this.listTables(undefined, connection);
 
       const truncateAll = tables
         .map(
