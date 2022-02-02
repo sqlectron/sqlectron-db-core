@@ -326,6 +326,7 @@ function parseRowQueryResult({
   return {
     command: statement.type || (isSelect && 'SELECT'),
     rows,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     fields: Object.keys(rows[0] || {}).map((name) => ({ name })),
     rowCount: data && data.length,
     affectedRows: changes || 0,

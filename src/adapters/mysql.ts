@@ -433,7 +433,9 @@ export default class MysqlAdapter extends AbstractAdapter {
         .map(
           (row) => `
         SET FOREIGN_KEY_CHECKS = 0;
-        TRUNCATE TABLE ${this.wrapIdentifier(schema)}.${this.wrapIdentifier(row.table_name)};
+        TRUNCATE TABLE ${this.wrapIdentifier(schema)}.${this.wrapIdentifier(
+            row.table_name as string,
+          )};
         SET FOREIGN_KEY_CHECKS = 1;
       `,
         )
@@ -494,7 +496,7 @@ export default class MysqlAdapter extends AbstractAdapter {
         try {
           resolve(await run(connection));
         } catch (err) {
-          rejectErr(err);
+          rejectErr(err as Error);
         } finally {
           connection.release();
         }
@@ -534,8 +536,8 @@ function parseRowQueryResult(
 ): QueryRowResult {
   // Fallback in case the identifier could not reconize the command
   const isSelect = Array.isArray(data);
-  const dataArray = isSelect ? <mysql.RowDataPacket[]>data || [] : [];
-  const dataHeader = !isSelect ? <mysql.ResultSetHeader>data : { affectedRows: undefined };
+  const dataArray = isSelect ? data || [] : [];
+  const dataHeader = !isSelect ? data : { affectedRows: undefined };
   return {
     command: command || (isSelect ? 'SELECT' : 'UNKNOWN'),
     rows: dataArray,
