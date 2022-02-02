@@ -76,19 +76,19 @@ export abstract class AbstractAdapter {
   abstract listDatabases(filter?: DatabaseFilter): Promise<string[]>;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  listSchemas(filter: SchemaFilter): Promise<string[]> {
+  listSchemas(filter?: SchemaFilter): Promise<string[]> {
     return Promise.resolve([]);
   }
 
-  abstract listTables(filter: SchemaFilter): Promise<ListTableResult[]>;
+  abstract listTables(filter?: SchemaFilter): Promise<ListTableResult[]>;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  listViews(filter: SchemaFilter): Promise<ListViewResult[]> {
+  listViews(filter?: SchemaFilter): Promise<ListViewResult[]> {
     return Promise.resolve([]);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  listRoutines(filter: SchemaFilter): Promise<ListRoutineResult[]> {
+  listRoutines(filter?: SchemaFilter): Promise<ListRoutineResult[]> {
     return Promise.resolve([]);
   }
 

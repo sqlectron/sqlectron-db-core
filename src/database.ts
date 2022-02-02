@@ -106,23 +106,23 @@ export class Database {
     return (<AbstractAdapter>this.connection).listDatabases(filter);
   }
 
-  listSchemas(filter: SchemaFilter): Promise<string[]> {
+  listSchemas(filter?: SchemaFilter): Promise<string[]> {
     this.checkIsConnected();
     return (<AbstractAdapter>this.connection).listSchemas(filter);
   }
 
-  listTables(filter: SchemaFilter): Promise<{ name: string }[]> {
+  listTables(filter?: SchemaFilter): Promise<{ name: string }[]> {
     this.checkIsConnected();
     return (<AbstractAdapter>this.connection).listTables(filter);
   }
 
-  listViews(filter: SchemaFilter): Promise<{ name: string }[]> {
+  listViews(filter?: SchemaFilter): Promise<{ name: string }[]> {
     this.checkIsConnected();
     return (<AbstractAdapter>this.connection).listViews(filter);
   }
 
   listRoutines(
-    filter: SchemaFilter,
+    filter?: SchemaFilter,
   ): Promise<
     {
       schema?: string;
