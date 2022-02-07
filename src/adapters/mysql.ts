@@ -34,9 +34,18 @@ declare module 'mysql2' {
   }
 }
 
+interface Field {
+  name: string;
+  characterSet: number;
+  encoding: string;
+  columnLength: number;
+  columnType: number;
+  decimals: number;
+}
+
 interface QueryResult {
   data: mysql.RowDataPacket[] | mysql.RowDataPacket[][] | mysql.ResultSetHeader;
-  fields: mysql.FieldPacket[] | mysql.FieldPacket[][];
+  fields: Field[] | Field[][];
 }
 
 interface Config {
@@ -223,15 +232,13 @@ export default class MysqlAdapter extends AbstractAdapter {
     const commands = identifyCommands(queryText).map((item) => item.type);
 
     if (!isMultipleQuery(fields)) {
-      return [
-        parseRowQueryResult(<mysql.RowDataPacket[]>data, <mysql.FieldPacket[]>fields, commands[0]),
-      ];
+      return [parseRowQueryResult(<mysql.RowDataPacket[]>data, <Field[]>fields, commands[0])];
     }
 
     return (<mysql.RowDataPacket[][]>data).map((_, idx) => {
       return parseRowQueryResult(
         (<mysql.RowDataPacket[][]>data)[idx],
-        (<mysql.FieldPacket[][]>fields)[idx],
+        (<Field[][]>fields)[idx],
         commands[idx],
       );
     });
@@ -431,17 +438,17 @@ export default class MysqlAdapter extends AbstractAdapter {
 
       const truncateAll = data
         .map(
-          (row) => `
-        SET FOREIGN_KEY_CHECKS = 0;
-        TRUNCATE TABLE ${this.wrapIdentifier(schema)}.${this.wrapIdentifier(
-            row.table_name as string,
-          )};
-        SET FOREIGN_KEY_CHECKS = 1;
-      `,
+          (row) =>
+            `TRUNCATE TABLE ${this.wrapIdentifier(schema)}.${this.wrapIdentifier(
+              row.table_name as string,
+            )};`,
         )
         .join('');
 
-      return this.driverExecuteQuery({ query: truncateAll }, connection);
+      return this.driverExecuteQuery(
+        { query: `SET FOREIGN_KEY_CHECKS = 0;\n` + truncateAll + '\nSET FOREIGN_KEY_CHECKS = 1;' },
+        connection,
+      );
     });
   }
 
@@ -461,7 +468,7 @@ export default class MysqlAdapter extends AbstractAdapter {
 
           resolve({
             data: data as mysql.RowDataPacket[] | mysql.RowDataPacket[][] | mysql.ResultSetHeader,
-            fields,
+            fields: parseFields(fields),
           });
         });
       });
@@ -529,9 +536,40 @@ function getRealError(conn: mysql.PoolConnection, err: mysql.QueryError) {
   return err;
 }
 
+function parseFields(fields: mysql.FieldPacket[] | mysql.FieldPacket[][]): Field[] | Field[][] {
+  if (!fields || !fields.length) {
+    return [];
+  }
+
+  return fields.map((field) => {
+    // normalize fields for DDL queries to be consistent
+    if (!field) {
+      return [];
+    }
+    if (Array.isArray(field)) {
+      return parseFields(field) as Field[];
+    }
+    return {
+      name: field.name,
+      // The mysql2 FieldPacket typing is malformed, see https://github.com/sidorares/node-mysql2/issues/1276
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/ban-ts-comment */
+      // @ts-ignore
+      characterSet: field.characterSet,
+      // @ts-ignore
+      encoding: field.encoding,
+      // @ts-ignore
+      columnLength: field.columnLength,
+      // @ts-ignore
+      columnType: field.columnType,
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/ban-ts-comment */
+      decimals: field.decimals,
+    } as Field;
+  }) as Field[] | Field[][];
+}
+
 function parseRowQueryResult(
   data: mysql.RowDataPacket[] | mysql.ResultSetHeader,
-  fields: mysql.FieldPacket[],
+  fields: Field[],
   command: string,
 ): QueryRowResult {
   // Fallback in case the identifier could not reconize the command
@@ -547,7 +585,7 @@ function parseRowQueryResult(
   };
 }
 
-function isMultipleQuery(fields: mysql.FieldPacket[] | mysql.FieldPacket[][]) {
+function isMultipleQuery(fields: Field[] | Field[][]) {
   if (!fields) {
     return false;
   }
