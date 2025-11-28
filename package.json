@@ -47,7 +47,7 @@
     "mysql2": "^2.2.0",
     "pg": "^8.5.1",
     "sql-query-identifier": "^2.2.4",
-    "sqlite3": "^5.0.2",
+    "sqlite3": "^5.1.7",
     "ssh2": "^1.6.0"
   },
   "devDependencies": {
