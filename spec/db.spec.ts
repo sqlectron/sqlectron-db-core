@@ -529,7 +529,11 @@ describe('db', () => {
           it('should return table create script', async () => {
             const [createScript] = await dbConn.getTableCreateScript('users');
 
-            if (dbAdapter === 'mysql' && versionCompare(dbConn.getVersion().version, '8') >= 0) {
+            if (dbAdapter === 'mysql') {
+              const extra =
+                versionCompare(dbConn.getVersion().version, '8') >= 0
+                  ? 'CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci'
+                  : 'CHARSET=latin1';
               expect(createScript).to.eql(
                 'CREATE TABLE `users` (\n' +
                   '  `id` int NOT NULL AUTO_INCREMENT,\n' +
@@ -541,13 +545,9 @@ describe('db', () => {
                   '  PRIMARY KEY (`id`),\n' +
                   '  KEY `role_id` (`role_id`),\n' +
                   '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
-                  ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;',
+                  `) ENGINE=InnoDB DEFAULT ${extra};`,
               );
-            } else if (mysqlAdapters.includes(dbAdapter)) {
-              const charset =
-                dbAdapter === 'mariadb' && versionCompare(dbConn.getVersion().version, '10.1') > 0
-                  ? 'utf8mb4'
-                  : 'latin1';
+            } else if (dbAdapter === 'mariadb') {
               expect(createScript).to.eql(
                 'CREATE TABLE `users` (\n' +
                   '  `id` int(11) NOT NULL AUTO_INCREMENT,\n' +
@@ -559,7 +559,7 @@ describe('db', () => {
                   '  PRIMARY KEY (`id`),\n' +
                   '  KEY `role_id` (`role_id`),\n' +
                   '  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n' +
-                  `) ENGINE=InnoDB DEFAULT CHARSET=${charset};`,
+                  `) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
               );
             } else if (postgresAdapters.includes(dbAdapter)) {
               expect(createScript).to.eql(
