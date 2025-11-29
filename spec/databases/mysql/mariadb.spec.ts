@@ -22,6 +22,8 @@ describe('test connect', () => {
 
     const serverInfo: ServerConfig = {
       ...config['mariadb'],
+      user: 'foo',
+      password: 'password',
       name: 'mariadb',
       adapter: 'mariadb',
     };
