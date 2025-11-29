@@ -11,23 +11,23 @@ jobs:
         include:
           # For databases that use always the same version,
           # it defaults to the env variable fallback defined in the docker-compose file
-          - NODE_VERSION: 12.x
+          - NODE_VERSION: 18.x
             MYSQL_VERSION: 5.7
             MARIADB_VERSION: 10.1
             CASSANDRA_VERSION: 2.1
             POSTGRES_VERSION: 9
             MSSQL_COLLATION: Latin1_General_CI_AS
-          - NODE_VERSION: 14.x
+          - NODE_VERSION: 18.x
             MYSQL_VERSION: 5.7
             MARIADB_VERSION: 10.1
             CASSANDRA_VERSION: 3
             POSTGRES_VERSION: 9
             MSSQL_COLLATION: Latin1_General_CS_AS
-          - NODE_VERSION: 16.x
-            MYSQL_VERSION: 8
-            MARIADB_VERSION: 10.5
-            CASSANDRA_VERSION: 3
-            POSTGRES_VERSION: 13
+          - NODE_VERSION: 20.x
+            MYSQL_VERSION: 9
+            MARIADB_VERSION: 12
+            CASSANDRA_VERSION: 5
+            POSTGRES_VERSION: 18
             MSSQL_COLLATION: Latin1_General_CI_AS
 
     steps:
