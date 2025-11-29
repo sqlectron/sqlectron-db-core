@@ -245,7 +245,13 @@ export default class SqliteAdapter extends AbstractAdapter {
 
           return resolve({
             data,
+            // One some versions of node, `this` is not properly typed, and I don't
+            // feel like fighting the ts compiler to figure it out.
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             lastID: (this as RunResult).lastID, // eslint-disable-line @typescript-eslint/no-unnecessary-type-assertion
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             changes: (this as RunResult).changes, // eslint-disable-line @typescript-eslint/no-unnecessary-type-assertion
           });
         });
