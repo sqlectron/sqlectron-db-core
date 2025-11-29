@@ -4,17 +4,19 @@ on:
   release:
     types: [published]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 10
-          registry-url: https://registry.npmjs.org/
+          node-version: 18.x
+          cache: 'npm'
       - run: npm ci
       - run: npm run lint
       - run: npm run publisher
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
