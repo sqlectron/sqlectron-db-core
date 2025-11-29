@@ -70,7 +70,7 @@ export default class MysqlAdapter extends AbstractAdapter {
       pool: mysql.createPool({
         ...dbConfig,
         authPlugins: {
-          ed25519: ed25519AuthPlugin(),
+          client_ed25519: ed25519AuthPlugin(),
         },
       }),
     };
