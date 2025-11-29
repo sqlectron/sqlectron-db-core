@@ -1,4 +1,5 @@
-import mysql from 'mysql2';
+import ed25519AuthPlugin from '@coresql/mysql2-auth-ed25519';
+import mysql, { PoolConnection } from 'mysql2';
 import { identify } from 'sql-query-identifier';
 
 import createLogger from '../logger';
@@ -27,7 +28,7 @@ const mysqlErrors = {
   CONNECTION_LOST: 'PROTOCOL_CONNECTION_LOST',
 };
 
-declare module 'mysql2' {
+declare module 'mysql2/typings/mysql/lib/PoolConnection' {
   interface PoolConnection {
     _fatalError: Error | null;
     _protocolError: Error | null;
@@ -66,7 +67,12 @@ export default class MysqlAdapter extends AbstractAdapter {
     logger().debug('create adapter for mysql with config %j', dbConfig);
 
     this.conn = {
-      pool: mysql.createPool(dbConfig),
+      pool: mysql.createPool({
+        ...dbConfig,
+        authPlugins: {
+          ed25519: ed25519AuthPlugin(),
+        },
+      }),
     };
   }
 
@@ -521,10 +527,13 @@ function identifyCommands(queryText: string): Result[] {
   }
 }
 
-function getRealError(conn: mysql.PoolConnection, err: mysql.QueryError) {
-  /* eslint no-underscore-dangle:0 */
-  if (conn && (conn._fatalError || conn._protocolError)) {
-    return conn._fatalError || conn._protocolError;
+function getRealError(conn: PoolConnection, err: mysql.QueryError): Error {
+  /* eslint no-underscore-dangle:0, @typescript-eslint/no-unsafe-return:0 */
+  if (conn?._fatalError) {
+    return conn._fatalError;
+  }
+  if (conn?._protocolError) {
+    return conn._protocolError;
   }
   return err;
 }
