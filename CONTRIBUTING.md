@@ -25,13 +25,13 @@ It is required to use [editorconfig](http://editorconfig.org/). Furthermore, ple
 It will bring up some databases such as MySQL and PostgreSQL and run all the tests:
 
 ```shell
-docker-compose run --rm test
+docker compose run --rm test
 ```
 
 Or to start the container and run the test command manually from there:
 
 ```shell
-docker-compose run --rm test bash
+docker compose run --rm test bash
 npm install
 npm test
 ```

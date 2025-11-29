@@ -55,7 +55,7 @@ jobs:
     # -- Setup infra dependencies for tests
     # ------------------------------
     - name: Setup CI dependencies
-      run: docker-compose up ci_setup
+      run: docker compose up ci_setup
 
     - name: Setup CI schemas
       run: ./scripts/setup-schemas.sh
