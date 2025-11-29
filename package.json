@@ -61,7 +61,6 @@
     "@types/mssql": "^6.0.7",
     "@types/pg": "^8.15.6",
     "@types/sql-query-identifier": "^1.1.0",
-    "@types/sqlite3": "^3.1.6",
     "@types/ssh2": "^0.5.46",
     "@typescript-eslint/eslint-plugin": "^5.10.2",
     "@typescript-eslint/parser": "^5.10.2",
