@@ -47,7 +47,7 @@
     "mssql": "^6.2.1",
     "mysql2": "^3.15.3",
     "pg": "^8.16.3",
-    "sql-query-identifier": "^2.2.4",
+    "sql-query-identifier": "^2.9.0",
     "sqlite3": "^5.1.7",
     "ssh2": "^1.17.0"
   },
@@ -60,7 +60,6 @@
     "@types/mocha": "^8.2.0",
     "@types/mssql": "^6.0.7",
     "@types/pg": "^8.15.6",
-    "@types/sql-query-identifier": "^1.1.0",
     "@types/ssh2": "^0.5.46",
     "@typescript-eslint/eslint-plugin": "^5.10.2",
     "@typescript-eslint/parser": "^5.10.2",
