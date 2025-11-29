@@ -31,15 +31,16 @@ jobs:
             MSSQL_COLLATION: Latin1_General_CI_AS
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
 
     # ------------------------------
     # -- Setup node dependencies for tests
     # ------------------------------
     - name: Use Node.js ${{ matrix.NODE_VERSION }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ matrix.NODE_VERSION }}
+        cache: npm
 
     - run: npm ci
 
