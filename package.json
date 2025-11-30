@@ -38,7 +38,7 @@
     "url": "https://github.com/sqlectron/sqlectron-db-core"
   },
   "engines": {
-    "node": ">= 12.13"
+    "node": ">=18"
   },
   "dependencies": {
     "@coresql/mysql2-auth-ed25519": "^1.0.0",
